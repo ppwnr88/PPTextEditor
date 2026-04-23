@@ -763,13 +763,19 @@ function App() {
               </label>
             </div>
 
-            <label className="checkbox-row">
-              <input
-                checked={settings.autosave}
-                type="checkbox"
-                onChange={(event) => setSettings({ ...settings, autosave: event.currentTarget.checked })}
-              />
-              Save on modified idle
+            <label className="autosave-card">
+              <span>
+                <strong>Autosave</strong>
+                <em>Save the active file automatically shortly after edits settle.</em>
+              </span>
+              <span className="autosave-control">
+                <input
+                  checked={settings.autosave}
+                  type="checkbox"
+                  onChange={(event) => setSettings({ ...settings, autosave: event.currentTarget.checked })}
+                />
+                <b>{settings.autosave ? "On" : "Off"}</b>
+              </span>
             </label>
 
             <section className="github-panel">

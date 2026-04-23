@@ -685,13 +685,6 @@ select:focus {
   font-size: 0.8rem;
 }
 
-.checkbox-row {
-  display: flex !important;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0 0.7rem 0.75rem;
-}
-
 .github-panel {
   display: grid;
   gap: 0.65rem;
@@ -700,6 +693,54 @@ select:focus {
   border: 1px solid #3f3f3f;
   border-radius: 6px;
   background: #292929;
+}
+
+.autosave-card {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0.7rem 0.75rem;
+  padding: 0.78rem 0.8rem;
+  border: 1px solid #3f3f3f;
+  border-radius: 6px;
+  background: #292929;
+}
+
+.autosave-card > span:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.autosave-card strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.autosave-card em {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  line-height: 1.5;
+}
+
+.autosave-control {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.55rem;
+}
+
+.autosave-control input {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: #2f9bff;
+}
+
+.autosave-control b {
+  min-width: 2rem;
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .github-panel > div:first-child {
@@ -756,6 +797,8 @@ select:focus {
 .theme-paper .search-result span,
 .theme-paper .palette-item span,
 .theme-paper .recent-item,
+.theme-paper .autosave-card em,
+.theme-paper .autosave-control b,
 .theme-paper .github-panel span,
 .theme-paper .github-panel p {
   color: rgba(42, 50, 57, 0.7);
@@ -812,6 +855,15 @@ select:focus {
 .theme-paper .github-panel {
   background: #f7efe4;
   border-color: rgba(74, 63, 52, 0.16);
+}
+
+.theme-paper .autosave-card {
+  background: #f7efe4;
+  border-color: rgba(74, 63, 52, 0.16);
+}
+
+.theme-paper .autosave-card strong {
+  color: #1d2731;
 }
 
 .theme-paper .settings-overlay,

@@ -38,6 +38,8 @@ struct AppSettings {
     autosave: bool,
     #[serde(default)]
     github: GitHubConnectionSettings,
+    #[serde(default)]
+    workspace: PersistedWorkspaceState,
     recent_files: Vec<String>,
     recent_folders: Vec<String>,
 }
@@ -50,6 +52,13 @@ struct GitHubConnectionSettings {
     username: String,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PersistedWorkspaceState {
+    root_path: Option<String>,
+    expanded_nodes: Vec<String>,
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
@@ -60,6 +69,7 @@ impl Default for AppSettings {
             word_wrap: "off".into(),
             autosave: false,
             github: GitHubConnectionSettings::default(),
+            workspace: PersistedWorkspaceState::default(),
             recent_files: Vec::new(),
             recent_folders: Vec::new(),
         }
@@ -304,6 +314,8 @@ mod tests {
         let settings: super::AppSettings = serde_json::from_str(content).unwrap();
         assert!(!settings.github.connected);
         assert!(settings.github.username.is_empty());
+        assert!(settings.workspace.root_path.is_none());
+        assert!(settings.workspace.expanded_nodes.is_empty());
     }
 }
 

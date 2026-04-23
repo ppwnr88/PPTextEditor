@@ -73,14 +73,30 @@ function App() {
     [activeTabId, tabs],
   );
 
-  async function handleOpenFolder(path: string) {
+  async function handleOpenFolder(path: string, expandedNodes?: string[]) {
     const root = await listDir(path);
+    const nextExpandedNodes = expandedNodes && expandedNodes.length > 0 ? expandedNodes : [path];
     setFileTree(root);
-    updateWorkspaceState(path);
+    updateWorkspaceState(path, nextExpandedNodes);
     setSettings({
       ...settings,
+      workspace: {
+        expandedNodes: nextExpandedNodes,
+        rootPath: path,
+      },
       recentFolders: [path, ...settings.recentFolders.filter((entry) => entry !== path)].slice(0, 12),
     });
+  }
+
+  async function restoreWorkspace(path: string, expandedNodes: string[]) {
+    try {
+      const root = await listDir(path);
+      setFileTree(root);
+      updateWorkspaceState(path, expandedNodes.length > 0 ? expandedNodes : [path]);
+      setOpenError(null);
+    } catch (error) {
+      setOpenError(`Could not restore workspace: ${String(error)}`);
+    }
   }
 
   async function handleOpenFile(path: string) {
@@ -296,9 +312,35 @@ function App() {
 
   useEffect(() => {
     void loadSettings()
-      .then((loaded) => setSettings(loaded))
+      .then((loaded) => {
+        setSettings(loaded);
+        if (loaded.workspace.rootPath) {
+          void restoreWorkspace(loaded.workspace.rootPath, loaded.workspace.expandedNodes);
+        }
+      })
       .finally(() => setSettingsLoaded(true));
   }, [setSettings]);
+
+  useEffect(() => {
+    if (!settingsLoaded) {
+      return;
+    }
+
+    if (
+      settings.workspace.rootPath === workspace.rootPath &&
+      arraysEqual(settings.workspace.expandedNodes, workspace.expandedNodes)
+    ) {
+      return;
+    }
+
+    setSettings({
+      ...settings,
+      workspace: {
+        expandedNodes: workspace.expandedNodes,
+        rootPath: workspace.rootPath,
+      },
+    });
+  }, [settings, settingsLoaded, setSettings, workspace.expandedNodes, workspace.rootPath]);
 
   useEffect(() => {
     if (!settingsLoaded) {
@@ -560,7 +602,8 @@ function App() {
                     scrollBeyondLastLine: false,
                     scrollbar: {
                       alwaysConsumeMouseWheel: false,
-                      horizontal: "hidden",
+                      horizontal: settings.wordWrap === "off" ? "auto" : "hidden",
+                      horizontalScrollbarSize: 8,
                       vertical: "hidden",
                     },
                     tabSize: settings.tabSize,
@@ -846,6 +889,10 @@ function trimPath(path: string, rootPath: string | null) {
   }
 
   return path.slice(rootPath.length + 1);
+}
+
+function arraysEqual(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 type TreeNodeProps = {

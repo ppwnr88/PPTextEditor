@@ -790,22 +790,26 @@ kbd {
   }
 
   .brand {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     gap: 8px;
   }
 
   .brand img {
-    width: 34px;
-    height: 34px;
-    border-radius: 11px;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
   }
 
   .brand span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
+    position: static;
+    width: auto;
+    height: auto;
+    max-width: 108px;
     overflow: hidden;
-    clip: rect(0 0 0 0);
+    clip: auto;
+    font-size: 0.82rem;
+    line-height: 1;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
@@ -821,9 +825,9 @@ kbd {
   .nav-links a {
     flex: 1 1 0;
     min-width: 0;
-    padding: 8px 5px;
+    padding: 7px 4px;
     text-align: center;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     letter-spacing: -0.01em;
   }
 
@@ -877,8 +881,18 @@ kbd {
   }
 
   .brand img {
-    width: 31px;
-    height: 31px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .brand span {
+    max-width: 92px;
+    font-size: 0.76rem;
+  }
+
+  .nav-links a {
+    padding-inline: 3px;
+    font-size: 0.64rem;
   }
 
   .hero-actions {

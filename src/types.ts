@@ -25,6 +25,11 @@ export type WorkspaceState = {
   activeTabId: string | null;
 };
 
+export type PersistedWorkspaceState = {
+  rootPath: string | null;
+  expandedNodes: string[];
+};
+
 export type AppSettings = {
   theme: ThemeMode;
   fontFamily: string;
@@ -33,6 +38,7 @@ export type AppSettings = {
   wordWrap: "on" | "off";
   autosave: boolean;
   github: GitHubConnectionSettings;
+  workspace: PersistedWorkspaceState;
   recentFiles: string[];
   recentFolders: string[];
 };

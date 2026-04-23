@@ -10,6 +10,10 @@ const defaultSettings: AppSettings = {
     token: "",
     username: "",
   },
+  workspace: {
+    expandedNodes: [],
+    rootPath: null,
+  },
   recentFiles: [],
   recentFolders: [],
   tabSize: 2,
@@ -43,6 +47,10 @@ export async function loadSettings() {
       github: {
         ...defaultSettings.github,
         ...(settings.github ?? {}),
+      },
+      workspace: {
+        ...defaultSettings.workspace,
+        ...(settings.workspace ?? {}),
       },
       theme: persistedTheme === "midnight" ? "sublime" : settings.theme,
     } as AppSettings;

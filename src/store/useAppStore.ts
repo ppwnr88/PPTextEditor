@@ -28,7 +28,7 @@ type AppStore = {
   setWorkspaceSearch: (query: string, results: SearchResult[]) => void;
   toggleNode: (path: string) => void;
   updateActiveTabContent: (content: string) => void;
-  updateWorkspaceState: (rootPath: string | null) => void;
+  updateWorkspaceState: (rootPath: string | null, expandedNodes?: string[]) => void;
 };
 
 const defaultSettings: AppSettings = {
@@ -39,6 +39,10 @@ const defaultSettings: AppSettings = {
     connected: false,
     token: "",
     username: "",
+  },
+  workspace: {
+    expandedNodes: [],
+    rootPath: null,
   },
   recentFiles: [],
   recentFolders: [],
@@ -144,11 +148,11 @@ export const useAppStore = create<AppStore>((set) => ({
           : tab,
       ),
     })),
-  updateWorkspaceState: (rootPath) =>
+  updateWorkspaceState: (rootPath, expandedNodes) =>
     set((state) => ({
       workspace: {
         ...state.workspace,
-        expandedNodes: rootPath ? [rootPath] : [],
+        expandedNodes: expandedNodes ?? (rootPath ? [rootPath] : []),
         rootPath,
       },
     })),

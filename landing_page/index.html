@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="PPText Editor is a fast, keyboard-first code editor for macOS with local workspaces, GitHub connection, and focused editing shortcuts."
+      content="PPText Editor is a fast, keyboard-first desktop code editor with local workspaces, GitHub connection, and focused editing shortcuts."
     />
     <meta name="theme-color" content="#111317" />
-    <title>PPText Editor - Fast macOS Code Editor</title>
+    <title>PPText Editor - Fast Desktop Code Editor</title>
     <link rel="icon" href="./assets/pptext-icon.png" />
     <link rel="preload" href="./styles.css" as="style" />
     <link rel="stylesheet" href="./styles.css" />
@@ -31,7 +31,7 @@
       <main id="top">
         <section class="hero">
           <div class="hero-copy" data-reveal>
-            <p class="eyebrow">macOS-first code editing</p>
+            <p class="eyebrow">Desktop-first code editing</p>
             <h1>A focused editor that gets out of your way.</h1>
             <p class="hero-lede">
               PPText Editor is built for local workspaces, fast file switching, clean writing flow, and a crisp
@@ -41,10 +41,13 @@
               <a class="button button-primary" href="./downloads/PPText-Editor-0.1.0-aarch64.dmg" download>
                 Download for macOS
               </a>
+              <a class="button button-secondary" href="https://github.com/ppwnr88/PPTextEditor/releases/latest">
+                Windows builds
+              </a>
               <a class="button button-secondary" href="#features">Explore features</a>
             </div>
             <div class="meta-row" aria-label="App details">
-              <span>Apple Silicon</span>
+              <span>macOS + Windows</span>
               <span>Version 0.1.0</span>
               <span>GitHub connect</span>
             </div>
@@ -167,11 +170,24 @@ editor.<span class="token-blue">open</span>(<span class="token-green">"local-pro
         <section id="download" class="download-section" data-reveal>
           <img src="./assets/pptext-icon.png" alt="PPText Editor app icon" width="96" height="96" />
           <p class="eyebrow">Ready to try it?</p>
-          <h2>Download PPText Editor for macOS.</h2>
-          <p>The current build includes GitHub connection, middle-click tab closing, and a refreshed settings panel.</p>
-          <a class="button button-primary" href="./downloads/PPText-Editor-0.1.0-aarch64.dmg" download>
-            Download DMG
-          </a>
+          <h2>Download PPText Editor for macOS or Windows.</h2>
+          <p>
+            The current build includes GitHub connection, middle-click tab closing, a native app menu, and a refreshed
+            settings panel.
+          </p>
+          <div class="download-grid">
+            <a class="download-card" href="./downloads/PPText-Editor-0.1.0-aarch64.dmg" download>
+              <strong>macOS</strong>
+              <span>Apple Silicon DMG</span>
+            </a>
+            <a class="download-card" href="https://github.com/ppwnr88/PPTextEditor/releases/latest">
+              <strong>Windows</strong>
+              <span>Latest installer release</span>
+            </a>
+          </div>
+          <p class="download-note">
+            Tagged releases publish Windows installers automatically to GitHub Releases.
+          </p>
         </section>
       </main>
 

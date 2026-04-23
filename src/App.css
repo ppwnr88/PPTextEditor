@@ -784,6 +784,42 @@ select:focus {
   background: #fbf7f1;
 }
 
+.theme-paper .sidebar {
+  background: #f4efe7;
+  border-right-color: rgba(87, 75, 62, 0.1);
+}
+
+.theme-paper .sidebar-header {
+  padding-block: 0.52rem;
+  background: rgba(247, 241, 233, 0.72);
+  border-bottom-color: rgba(87, 75, 62, 0.1);
+}
+
+.theme-paper .sidebar-section {
+  padding-top: 0.72rem;
+}
+
+.theme-paper .tree-group {
+  margin-left: 0;
+}
+
+.theme-paper .tree-children {
+  gap: 0;
+  padding-left: 0.62rem;
+  border-left: 1px solid rgba(87, 75, 62, 0.08);
+  margin-left: 0.46rem;
+}
+
+.theme-paper .tree-node {
+  min-height: 27px;
+  padding: 0.24rem 0.48rem;
+  border-color: transparent;
+  border-radius: 5px;
+  color: #27313a;
+  background: transparent;
+  box-shadow: none;
+}
+
 .theme-paper .brand span,
 .theme-paper .utility-meta,
 .theme-paper .empty-tabs,
@@ -817,6 +853,17 @@ select:focus {
   border-color: rgba(74, 63, 52, 0.18);
 }
 
+.theme-paper .tree-node:hover {
+  color: #151a1f;
+  background: rgba(165, 85, 42, 0.08);
+  border-color: transparent;
+}
+
+.theme-paper .tree-node:focus {
+  outline: 2px solid rgba(165, 85, 42, 0.22);
+  outline-offset: -2px;
+}
+
 .theme-paper input::placeholder {
   color: rgba(42, 50, 57, 0.44);
 }
@@ -824,7 +871,6 @@ select:focus {
 .theme-paper button:hover,
 .theme-paper input:hover,
 .theme-paper select:hover,
-.theme-paper .tree-node:hover,
 .theme-paper .inline-result:hover,
 .theme-paper .search-result:hover,
 .theme-paper .palette-item:hover,

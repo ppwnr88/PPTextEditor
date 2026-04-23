@@ -55,7 +55,7 @@ jobs:
         working-directory: src-tauri
 
       - name: Build Windows bundles
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0.6.2
         with:
           args: --bundles nsis,msi
           uploadWorkflowArtifacts: true

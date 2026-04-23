@@ -11,6 +11,7 @@ function createContext(): CommandContext {
     focusWorkspaceSearch: vi.fn(),
     openFilePicker: vi.fn(async () => undefined),
     openFolderPicker: vi.fn(async () => undefined),
+    openGitHubSettings: vi.fn(),
     openSettings: vi.fn(),
     saveActiveTab: vi.fn(async () => undefined),
     togglePalette: vi.fn(),
@@ -23,7 +24,7 @@ describe("createCoreCommands", () => {
   it("exposes keyboard-first command ids", () => {
     const commands = createCoreCommands(createContext());
     expect(commands.map((command) => command.id)).toEqual(
-      expect.arrayContaining(["workspace.openFolder", "editor.save", "ui.commandPalette"]),
+      expect.arrayContaining(["workspace.openFolder", "editor.save", "ui.commandPalette", "github.connect"]),
     );
   });
 

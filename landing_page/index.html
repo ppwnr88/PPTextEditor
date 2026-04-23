@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="PPText Editor is a fast, keyboard-first code editor for macOS, inspired by focused local development workflows."
+      content="PPText Editor is a fast, keyboard-first code editor for macOS with local workspaces, GitHub connection, and focused editing shortcuts."
     />
     <meta name="theme-color" content="#111317" />
     <title>PPText Editor - Fast macOS Code Editor</title>
@@ -35,7 +35,7 @@
             <h1>A focused editor that gets out of your way.</h1>
             <p class="hero-lede">
               PPText Editor is built for local workspaces, fast file switching, clean writing flow, and a crisp
-              Sublime-inspired editing feel without the extra ceremony.
+              Sublime-inspired editing feel with practical touches like middle-click tab closing and GitHub connection.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="./downloads/PPText-Editor-0.1.0-aarch64.dmg" download>
@@ -46,7 +46,7 @@
             <div class="meta-row" aria-label="App details">
               <span>Apple Silicon</span>
               <span>Version 0.1.0</span>
-              <span>Local files</span>
+              <span>GitHub connect</span>
             </div>
           </div>
 
@@ -70,11 +70,13 @@
                   <div class="tab-strip">
                     <span>App.tsx</span>
                     <span>settings.json</span>
+                    <span class="tab-hint">middle-click closes tabs</span>
                   </div>
                   <pre><code><span class="token-purple">const</span> editor = <span class="token-blue">createWorkspace</span>({
   theme: <span class="token-green">"sublime"</span>,
   fontFace: <span class="token-green">"JetBrains Mono"</span>,
   keyboardFirst: <span class="token-orange">true</span>,
+  github: <span class="token-green">"connected"</span>,
 });
 
 editor.<span class="token-blue">open</span>(<span class="token-green">"local-project"</span>);</code></pre>
@@ -111,9 +113,35 @@ editor.<span class="token-blue">open</span>(<span class="token-green">"local-pro
             </article>
             <article class="feature-card" data-reveal>
               <span class="feature-icon">04</span>
+              <h3>GitHub ready</h3>
+              <p>Connect a GitHub account with a personal access token and keep the editor ready for repo workflows.</p>
+            </article>
+            <article class="feature-card" data-reveal>
+              <span class="feature-icon">05</span>
+              <h3>Tab control</h3>
+              <p>Close tabs with the mouse wheel click, the close button, or command palette flow.</p>
+            </article>
+            <article class="feature-card" data-reveal>
+              <span class="feature-icon">06</span>
               <h3>Clean preferences</h3>
               <p>Switch color schemes, font face, size, tab width, word wrap, and autosave in a focused panel.</p>
             </article>
+          </div>
+        </section>
+
+        <section class="github-section" data-reveal>
+          <div>
+            <p class="eyebrow">Connected workflows</p>
+            <h2>GitHub connection is built into Preferences.</h2>
+            <p>
+              Add a GitHub personal access token, verify the account, and keep the connection saved locally for the
+              next layer of repository features. It is intentionally simple, desktop-friendly, and quick to set up.
+            </p>
+          </div>
+          <div class="connection-card" aria-label="GitHub connection preview">
+            <span class="connection-dot"></span>
+            <strong>Connected as ppwnr88</strong>
+            <p>Preferences → GitHub → Connect GitHub</p>
           </div>
         </section>
 
@@ -131,6 +159,8 @@ editor.<span class="token-blue">open</span>(<span class="token-green">"local-pro
             <span><kbd>⇧</kbd><kbd>⌘</kbd><kbd>O</kbd> Open folder</span>
             <span><kbd>⌘</kbd><kbd>P</kbd> Goto anything</span>
             <span><kbd>⌘</kbd><kbd>S</kbd> Save</span>
+            <span><kbd>Wheel</kbd> Click Close tab</span>
+            <span><kbd>⌘</kbd><kbd>,</kbd> Preferences</span>
           </div>
         </section>
 
@@ -138,7 +168,7 @@ editor.<span class="token-blue">open</span>(<span class="token-green">"local-pro
           <img src="./assets/pptext-icon.png" alt="PPText Editor app icon" width="96" height="96" />
           <p class="eyebrow">Ready to try it?</p>
           <h2>Download PPText Editor for macOS.</h2>
-          <p>The current build is packaged as a DMG for Apple Silicon Macs.</p>
+          <p>The current build includes GitHub connection, middle-click tab closing, and a refreshed settings panel.</p>
           <a class="button button-primary" href="./downloads/PPText-Editor-0.1.0-aarch64.dmg" download>
             Download DMG
           </a>

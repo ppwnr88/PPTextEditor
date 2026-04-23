@@ -35,6 +35,11 @@ const defaultSettings: AppSettings = {
   autosave: false,
   fontFamily: "JetBrains Mono",
   fontSize: 14,
+  github: {
+    connected: false,
+    token: "",
+    username: "",
+  },
   recentFiles: [],
   recentFolders: [],
   tabSize: 2,

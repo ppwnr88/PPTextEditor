@@ -36,8 +36,18 @@ struct AppSettings {
     tab_size: u8,
     word_wrap: String,
     autosave: bool,
+    #[serde(default)]
+    github: GitHubConnectionSettings,
     recent_files: Vec<String>,
     recent_folders: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GitHubConnectionSettings {
+    connected: bool,
+    token: String,
+    username: String,
 }
 
 impl Default for AppSettings {
@@ -49,6 +59,7 @@ impl Default for AppSettings {
             tab_size: 2,
             word_wrap: "off".into(),
             autosave: false,
+            github: GitHubConnectionSettings::default(),
             recent_files: Vec::new(),
             recent_folders: Vec::new(),
         }
@@ -275,6 +286,24 @@ mod tests {
     fn migrates_midnight_theme_to_sublime() {
         assert_eq!(normalize_theme("midnight".into()), "sublime");
         assert_eq!(normalize_theme("paper".into()), "paper");
+    }
+
+    #[test]
+    fn settings_without_github_connection_still_load() {
+        let content = r#"{
+            "theme": "sublime",
+            "fontFamily": "JetBrains Mono",
+            "fontSize": 14,
+            "tabSize": 2,
+            "wordWrap": "off",
+            "autosave": false,
+            "recentFiles": [],
+            "recentFolders": []
+        }"#;
+
+        let settings: super::AppSettings = serde_json::from_str(content).unwrap();
+        assert!(!settings.github.connected);
+        assert!(settings.github.username.is_empty());
     }
 }
 

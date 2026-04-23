@@ -32,8 +32,15 @@ export type AppSettings = {
   tabSize: number;
   wordWrap: "on" | "off";
   autosave: boolean;
+  github: GitHubConnectionSettings;
   recentFiles: string[];
   recentFolders: string[];
+};
+
+export type GitHubConnectionSettings = {
+  connected: boolean;
+  token: string;
+  username: string;
 };
 
 export type SearchResult = {
@@ -51,6 +58,7 @@ export type CommandContext = {
   focusWorkspaceSearch: () => void;
   openFilePicker: () => Promise<void>;
   openFolderPicker: () => Promise<void>;
+  openGitHubSettings: () => void;
   openSettings: () => void;
   saveActiveTab: () => Promise<void>;
   togglePalette: () => void;

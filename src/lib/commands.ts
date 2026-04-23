@@ -52,6 +52,12 @@ export function createCoreCommands(context: CommandContext): CommandDefinition[]
       title: "Open Settings",
     },
     {
+      id: "github.connect",
+      keywords: ["github", "git", "connect", "token", "account"],
+      run: () => context.openGitHubSettings(),
+      title: "Connect GitHub",
+    },
+    {
       id: "ui.sidebar",
       keywords: ["explorer", "sidebar"],
       run: () => context.toggleSidebar(),

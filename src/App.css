@@ -692,6 +692,39 @@ select:focus {
   padding: 0 0.7rem 0.75rem;
 }
 
+.github-panel {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0 0.7rem 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid #3f3f3f;
+  border-radius: 6px;
+  background: #292929;
+}
+
+.github-panel > div:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.github-panel strong {
+  font-size: 0.9rem;
+}
+
+.github-panel span,
+.github-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.github-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .theme-paper .titlebar {
   background: linear-gradient(180deg, #f7efe4 0%, #eee2d3 100%);
   border-bottom-color: rgba(74, 63, 52, 0.18);
@@ -722,7 +755,9 @@ select:focus {
 .theme-paper .theme-option em,
 .theme-paper .search-result span,
 .theme-paper .palette-item span,
-.theme-paper .recent-item {
+.theme-paper .recent-item,
+.theme-paper .github-panel span,
+.theme-paper .github-panel p {
   color: rgba(42, 50, 57, 0.7);
 }
 
@@ -772,6 +807,11 @@ select:focus {
 
 .theme-paper .welcome-card p {
   color: rgba(42, 50, 57, 0.76);
+}
+
+.theme-paper .github-panel {
+  background: #f7efe4;
+  border-color: rgba(74, 63, 52, 0.16);
 }
 
 .theme-paper .settings-overlay,

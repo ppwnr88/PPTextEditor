@@ -31,6 +31,8 @@ function App() {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [cursorStatus, setCursorStatus] = useState({ column: 1, lineNumber: 1 });
   const [openError, setOpenError] = useState<string | null>(null);
+  const [githubTokenDraft, setGithubTokenDraft] = useState("");
+  const [githubStatus, setGithubStatus] = useState<string | null>(null);
 
   const {
     closeTab,
@@ -112,6 +114,57 @@ function App() {
     markTabSaved(activeTab.id);
   }
 
+  async function handleConnectGitHub() {
+    const token = githubTokenDraft.trim() || settings.github.token.trim();
+    if (!token) {
+      setGithubStatus("Paste a GitHub personal access token first.");
+      return;
+    }
+
+    setGithubStatus("Connecting to GitHub...");
+    try {
+      const response = await fetch("https://api.github.com/user", {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(response.status === 401 ? "Token is invalid or expired." : `GitHub returned ${response.status}.`);
+      }
+
+      const profile = (await response.json()) as { login?: string };
+      const username = profile.login ?? "github-user";
+      setSettings({
+        ...settings,
+        github: {
+          connected: true,
+          token,
+          username,
+        },
+      });
+      setGithubTokenDraft("");
+      setGithubStatus(`Connected as ${username}.`);
+    } catch (error) {
+      setGithubStatus(String(error instanceof Error ? error.message : error));
+    }
+  }
+
+  function handleDisconnectGitHub() {
+    setSettings({
+      ...settings,
+      github: {
+        connected: false,
+        token: "",
+        username: "",
+      },
+    });
+    setGithubTokenDraft("");
+    setGithubStatus("Disconnected from GitHub.");
+  }
+
   const commandContext = useMemo(
     () => ({
       activeTab,
@@ -149,6 +202,10 @@ function App() {
           await handleOpenFolder(picked);
         }
       },
+      openGitHubSettings: () => {
+        setSettingsOpen(true);
+        setGithubStatus(settings.github.connected ? `Connected as ${settings.github.username}.` : null);
+      },
       openSettings: () => setSettingsOpen(true),
       saveActiveTab: async () => {
         await handleSaveActiveTab();
@@ -170,6 +227,8 @@ function App() {
       setSettingsOpen,
       setSidebarMode,
       setSidebarOpen,
+      settings.github.connected,
+      settings.github.username,
       workspace.rootPath,
     ],
   );
@@ -451,6 +510,17 @@ function App() {
                   key={tab.id}
                   className={`tab ${tab.id === activeTabId ? "active" : ""}`}
                   onClick={() => setActiveTab(tab.id)}
+                  onAuxClick={(event) => {
+                    if (event.button === 1) {
+                      event.preventDefault();
+                      closeTab(tab.id);
+                    }
+                  }}
+                  onMouseDown={(event) => {
+                    if (event.button === 1) {
+                      event.preventDefault();
+                    }
+                  }}
                 >
                   <span>{tab.name}</span>
                   {tab.dirty ? <em>•</em> : null}
@@ -701,6 +771,33 @@ function App() {
               />
               Save on modified idle
             </label>
+
+            <section className="github-panel">
+              <div>
+                <strong>GitHub</strong>
+                <span>
+                  {settings.github.connected
+                    ? `Connected as ${settings.github.username}`
+                    : "Connect with a personal access token to prepare GitHub-powered workflows."}
+                </span>
+              </div>
+              <label>
+                Personal Access Token
+                <input
+                  type="password"
+                  value={githubTokenDraft}
+                  placeholder={settings.github.connected ? "Connected token saved locally" : "github_pat_..."}
+                  onChange={(event) => setGithubTokenDraft(event.currentTarget.value)}
+                />
+              </label>
+              <div className="github-actions">
+                <button onClick={() => void handleConnectGitHub()}>
+                  {settings.github.connected ? "Reconnect GitHub" : "Connect GitHub"}
+                </button>
+                {settings.github.connected ? <button onClick={handleDisconnectGitHub}>Disconnect</button> : null}
+              </div>
+              {githubStatus ? <p>{githubStatus}</p> : null}
+            </section>
           </div>
         </div>
       ) : null}

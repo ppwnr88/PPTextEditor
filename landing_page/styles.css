@@ -326,6 +326,12 @@ h3 {
   font-size: 0.85rem;
 }
 
+.tab-strip .tab-hint {
+  margin-left: auto;
+  color: rgba(247, 241, 232, 0.46);
+  background: transparent;
+}
+
 pre {
   margin: 0;
   padding: 30px;
@@ -382,7 +388,7 @@ pre {
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-top: 34px;
 }
@@ -416,6 +422,57 @@ pre {
   background: var(--accent);
   font-size: 0.8rem;
   font-weight: 900;
+}
+
+.github-section {
+  display: grid;
+  grid-template-columns: 1fr 0.72fr;
+  gap: 28px;
+  align-items: stretch;
+  margin: 4px 0 86px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(166, 226, 46, 0.18), transparent 22rem),
+    linear-gradient(135deg, rgba(97, 119, 255, 0.14), rgba(255, 255, 255, 0.055));
+}
+
+.github-section p {
+  color: var(--muted);
+  font-size: 1.04rem;
+  line-height: 1.7;
+}
+
+.connection-card {
+  display: grid;
+  align-content: end;
+  gap: 12px;
+  min-height: 260px;
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.12)),
+    rgba(0, 0, 0, 0.18);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.24);
+}
+
+.connection-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--green);
+  box-shadow: 0 0 0 10px rgba(166, 226, 46, 0.12);
+}
+
+.connection-card strong {
+  font-size: clamp(1.5rem, 3vw, 2.35rem);
+  letter-spacing: -0.05em;
+}
+
+.connection-card p {
+  margin: 0;
 }
 
 .workflow-section {
@@ -508,7 +565,8 @@ kbd {
 
 @media (max-width: 980px) {
   .hero,
-  .workflow-section {
+  .workflow-section,
+  .github-section {
     grid-template-columns: 1fr;
   }
 
@@ -564,7 +622,8 @@ kbd {
     grid-template-columns: 1fr;
   }
 
-  .workflow-section {
+  .workflow-section,
+  .github-section {
     padding: 24px;
   }
 

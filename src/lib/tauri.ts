@@ -5,6 +5,11 @@ const defaultSettings: AppSettings = {
   autosave: false,
   fontFamily: "JetBrains Mono",
   fontSize: 14,
+  github: {
+    connected: false,
+    token: "",
+    username: "",
+  },
   recentFiles: [],
   recentFolders: [],
   tabSize: 2,
@@ -33,7 +38,12 @@ export async function loadSettings() {
     const settings = await invoke<AppSettings>("load_settings");
     const persistedTheme = settings.theme as string;
     return {
+      ...defaultSettings,
       ...settings,
+      github: {
+        ...defaultSettings.github,
+        ...(settings.github ?? {}),
+      },
       theme: persistedTheme === "midnight" ? "sublime" : settings.theme,
     } as AppSettings;
   } catch {

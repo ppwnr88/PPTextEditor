@@ -779,16 +779,52 @@ kbd {
   }
 
   .site-header {
-    position: static;
-    margin-top: 9px;
+    position: sticky;
+    top: max(8px, env(safe-area-inset-top));
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 7px;
+    border-radius: 18px;
+  }
+
+  .brand {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  .brand img {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+
+  .brand span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .nav-links {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
+    width: auto;
+    gap: 3px;
   }
 
   .nav-links a {
-    text-align: left;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 5px;
+    text-align: center;
+    font-size: 0.72rem;
+    letter-spacing: -0.01em;
   }
 
   h1 {
@@ -837,11 +873,12 @@ kbd {
 
 @media (max-width: 360px) {
   .brand {
-    gap: 9px;
+    gap: 6px;
   }
 
-  .brand span {
-    font-size: 0.95rem;
+  .brand img {
+    width: 31px;
+    height: 31px;
   }
 
   .hero-actions {

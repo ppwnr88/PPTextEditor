@@ -83,7 +83,7 @@ export const useAppStore = create<AppStore>((set) => ({
 
       const tabs = state.tabs.filter((tab) => tab.id !== tabId);
       const nextActiveTabId =
-        state.workspace.activeTabId === tabId ? tabs.at(-1)?.id ?? null : state.workspace.activeTabId;
+        state.workspace.activeTabId === tabId ? (tabs.length > 0 ? tabs[tabs.length - 1].id : null) : state.workspace.activeTabId;
 
       return {
         tabs,

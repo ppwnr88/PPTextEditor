@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="PPText Editor is a fast, keyboard-first code editor for macOS, inspired by focused local development workflows."
+    />
+    <meta name="theme-color" content="#111317" />
+    <title>PPText Editor - Fast macOS Code Editor</title>
+    <link rel="icon" href="./assets/pptext-icon.png" />
+    <link rel="preload" href="./styles.css" as="style" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./script.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-reveal>
+        <a class="brand" href="#top" aria-label="PPText Editor home">
+          <img src="./assets/pptext-icon.png" alt="" width="44" height="44" />
+          <span>PPText Editor</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="#features">Features</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#download">Download</a>
+        </nav>
+      </header>
+
+      <main id="top">
+        <section class="hero">
+          <div class="hero-copy" data-reveal>
+            <p class="eyebrow">macOS-first code editing</p>
+            <h1>A focused editor that gets out of your way.</h1>
+            <p class="hero-lede">
+              PPText Editor is built for local workspaces, fast file switching, clean writing flow, and a crisp
+              Sublime-inspired editing feel without the extra ceremony.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="./downloads/PPText-Editor-0.1.0-aarch64.dmg" download>
+                Download for macOS
+              </a>
+              <a class="button button-secondary" href="#features">Explore features</a>
+            </div>
+            <div class="meta-row" aria-label="App details">
+              <span>Apple Silicon</span>
+              <span>Version 0.1.0</span>
+              <span>Local files</span>
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-label="PPText Editor preview" data-reveal>
+            <div class="window-card">
+              <div class="window-bar">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+                <span class="window-title">workspace / pptext</span>
+              </div>
+              <div class="editor-preview">
+                <aside>
+                  <strong>WORKSPACE</strong>
+                  <span class="file active">App.tsx</span>
+                  <span class="file">monaco.ts</span>
+                  <span class="file">settings.json</span>
+                  <span class="file">README.md</span>
+                </aside>
+                <div class="code-panel">
+                  <div class="tab-strip">
+                    <span>App.tsx</span>
+                    <span>settings.json</span>
+                  </div>
+                  <pre><code><span class="token-purple">const</span> editor = <span class="token-blue">createWorkspace</span>({
+  theme: <span class="token-green">"sublime"</span>,
+  fontFace: <span class="token-green">"JetBrains Mono"</span>,
+  keyboardFirst: <span class="token-orange">true</span>,
+});
+
+editor.<span class="token-blue">open</span>(<span class="token-green">"local-project"</span>);</code></pre>
+                </div>
+              </div>
+            </div>
+            <div class="floating-badge">
+              <img src="./assets/pptext-icon.png" alt="" width="54" height="54" />
+              <span>Built with Tauri</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" class="section">
+          <div class="section-heading" data-reveal>
+            <p class="eyebrow">What it does</p>
+            <h2>Everything needed for a sharp MVP editor.</h2>
+          </div>
+          <div class="feature-grid">
+            <article class="feature-card" data-reveal>
+              <span class="feature-icon">01</span>
+              <h3>Local workspaces</h3>
+              <p>Open folders, browse files, and keep recent sessions ready for the next pass.</p>
+            </article>
+            <article class="feature-card" data-reveal>
+              <span class="feature-icon">02</span>
+              <h3>Monaco editing</h3>
+              <p>Syntax highlighting, tabs, minimap support, and familiar editor behavior from day one.</p>
+            </article>
+            <article class="feature-card" data-reveal>
+              <span class="feature-icon">03</span>
+              <h3>Keyboard-first flow</h3>
+              <p>Command palette, quick navigation, save shortcuts, and search without reaching for the mouse.</p>
+            </article>
+            <article class="feature-card" data-reveal>
+              <span class="feature-icon">04</span>
+              <h3>Clean preferences</h3>
+              <p>Switch color schemes, font face, size, tab width, word wrap, and autosave in a focused panel.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="workflow" class="workflow-section" data-reveal>
+          <div>
+            <p class="eyebrow">Workflow</p>
+            <h2>Open. Search. Edit. Ship.</h2>
+            <p>
+              PPText Editor keeps the surface area calm: a file tree, a fast editor, workspace search, and a
+              command palette. The result feels light, direct, and ready for everyday local coding.
+            </p>
+          </div>
+          <div class="shortcut-grid" aria-label="Keyboard shortcuts">
+            <span><kbd>⌘</kbd><kbd>O</kbd> Open file</span>
+            <span><kbd>⇧</kbd><kbd>⌘</kbd><kbd>O</kbd> Open folder</span>
+            <span><kbd>⌘</kbd><kbd>P</kbd> Goto anything</span>
+            <span><kbd>⌘</kbd><kbd>S</kbd> Save</span>
+          </div>
+        </section>
+
+        <section id="download" class="download-section" data-reveal>
+          <img src="./assets/pptext-icon.png" alt="PPText Editor app icon" width="96" height="96" />
+          <p class="eyebrow">Ready to try it?</p>
+          <h2>Download PPText Editor for macOS.</h2>
+          <p>The current build is packaged as a DMG for Apple Silicon Macs.</p>
+          <a class="button button-primary" href="./downloads/PPText-Editor-0.1.0-aarch64.dmg" download>
+            Download DMG
+          </a>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <span>PPText Editor</span>
+        <span>© <span id="year">2026</span> Built for focused local coding.</span>
+      </footer>
+    </div>
+  </body>
+</html>

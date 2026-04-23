@@ -1,11 +1,34 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type MouseEvent,
+  type PointerEvent,
+} from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
-import { open } from "@tauri-apps/plugin-dialog";
+import { listen } from "@tauri-apps/api/event";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import "./App.css";
 import { createCoreCommands } from "./lib/commands";
 import { extensionRegistry } from "./lib/extensions";
 import { configureMonaco, getMonacoLanguage } from "./lib/monaco";
-import { loadSettings, listDir, readFile, saveSettings, searchInWorkspace, writeFile } from "./lib/tauri";
+import {
+  createDirectory,
+  createTextFile,
+  deletePath,
+  loadSettings,
+  listDir,
+  readFile,
+  renamePath,
+  saveSettings,
+  searchInWorkspace,
+  writeFile,
+} from "./lib/tauri";
 import { useAppStore } from "./store/useAppStore";
 import type { CommandDefinition, FileNode, SearchResult } from "./types";
 
@@ -33,6 +56,9 @@ function App() {
   const [openError, setOpenError] = useState<string | null>(null);
   const [githubTokenDraft, setGithubTokenDraft] = useState("");
   const [githubStatus, setGithubStatus] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(268);
+  const [workspaceMenu, setWorkspaceMenu] = useState<WorkspaceMenuState | null>(null);
+  const [fileAction, setFileAction] = useState<FileActionState | null>(null);
 
   const {
     closeTab,
@@ -99,6 +125,18 @@ function App() {
     }
   }
 
+  async function refreshWorkspace() {
+    if (!workspace.rootPath) {
+      return;
+    }
+
+    try {
+      setFileTree(await listDir(workspace.rootPath));
+    } catch (error) {
+      setOpenError(`Could not refresh workspace: ${String(error)}`);
+    }
+  }
+
   async function handleOpenFile(path: string) {
     try {
       const content = await readFile(path);
@@ -121,13 +159,124 @@ function App() {
     }
   }
 
-  async function handleSaveActiveTab() {
+  async function handleSaveActiveTab(forcePicker = false) {
     if (!activeTab) {
       return;
     }
 
-    await writeFile(activeTab.path, activeTab.content);
-    markTabSaved(activeTab.id);
+    const savePath =
+      !forcePicker && activeTab.path
+        ? activeTab.path
+        : await save({
+            defaultPath: workspace.rootPath ? `${workspace.rootPath}/${activeTab.name}` : activeTab.name,
+            title: "Save File",
+          });
+
+    if (!savePath) {
+      return;
+    }
+
+    await writeFile(savePath, activeTab.content);
+    markTabSaved(activeTab.id, {
+      id: savePath,
+      language: getMonacoLanguage(savePath),
+      name: savePath.split("/").pop() ?? savePath,
+      path: savePath,
+    });
+    setSettings({
+      ...settings,
+      recentFiles: [savePath, ...settings.recentFiles.filter((entry) => entry !== savePath)].slice(0, 12),
+    });
+    await refreshWorkspace();
+  }
+
+  function createUntitledTab() {
+    const untitledCount = tabs.filter((tab) => !tab.path).length + 1;
+    const name = untitledCount === 1 ? "untitled" : `untitled ${untitledCount}`;
+
+    openTab({
+      content: "",
+      dirty: false,
+      id: `untitled:${Date.now()}`,
+      language: "plaintext",
+      name,
+      originalContent: "",
+      path: "",
+    });
+  }
+
+  function selectSiblingTab(direction: 1 | -1) {
+    if (!activeTabId || tabs.length < 2) {
+      return;
+    }
+
+    const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+    const nextIndex = (currentIndex + direction + tabs.length) % tabs.length;
+    setActiveTab(tabs[nextIndex].id);
+  }
+
+  async function handleNativeMenuCommand(command: string) {
+    switch (command) {
+      case "native.new-file":
+        createUntitledTab();
+        break;
+      case "native.open-file":
+        await commandContext.openFilePicker();
+        break;
+      case "native.open-folder":
+      case "native.add-folder":
+        await commandContext.openFolderPicker();
+        break;
+      case "native.save":
+        await handleSaveActiveTab();
+        break;
+      case "native.save-as":
+        await handleSaveActiveTab(true);
+        break;
+      case "native.close-file":
+        if (activeTabId) {
+          closeTab(activeTabId);
+        }
+        break;
+      case "native.find":
+        searchInputRef.current?.focus();
+        break;
+      case "native.find-in-files":
+        setSidebarOpen(true);
+        setSidebarMode("search");
+        workspaceSearchInputRef.current?.focus();
+        break;
+      case "native.goto-anything":
+      case "native.command-palette":
+        setPaletteOpen(true);
+        break;
+      case "native.toggle-sidebar":
+        setSidebarOpen(!isSidebarOpen);
+        break;
+      case "native.toggle-word-wrap":
+        setSettings({ ...settings, wordWrap: settings.wordWrap === "on" ? "off" : "on" });
+        break;
+      case "native.tab-size-2":
+        setSettings({ ...settings, tabSize: 2 });
+        break;
+      case "native.tab-size-4":
+        setSettings({ ...settings, tabSize: 4 });
+        break;
+      case "native.tab-size-8":
+        setSettings({ ...settings, tabSize: 8 });
+        break;
+      case "native.refresh-folders":
+        await refreshWorkspace();
+        break;
+      case "native.next-file":
+        selectSiblingTab(1);
+        break;
+      case "native.previous-file":
+        selectSiblingTab(-1);
+        break;
+      default:
+        break;
+    }
   }
 
   async function handleConnectGitHub() {
@@ -291,7 +440,7 @@ function App() {
       if (column >= 0) {
         results.push({
           column: column + 1,
-          filePath: activeTab.path,
+          filePath: activeTab.path || activeTab.name,
           line: index + 1,
           preview: line.trim(),
         });
@@ -320,6 +469,28 @@ function App() {
       })
       .finally(() => setSettingsLoaded(true));
   }, [setSettings]);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+
+    void listen("native-menu-settings", () => setSettingsOpen(true)).then((handler) => {
+      unlisten = handler;
+    });
+
+    return () => unlisten?.();
+  }, [setSettingsOpen]);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+
+    void listen<string>("native-menu-command", (event) => {
+      void handleNativeMenuCommand(event.payload);
+    }).then((handler) => {
+      unlisten = handler;
+    });
+
+    return () => unlisten?.();
+  }, [activeTabId, commandContext, isSidebarOpen, settings, tabs, workspace.rootPath]);
 
   useEffect(() => {
     if (!settingsLoaded) {
@@ -374,7 +545,7 @@ function App() {
   }, [deferredWorkspaceQuery, setWorkspaceSearch, workspace.rootPath]);
 
   useEffect(() => {
-    if (!activeTab || !settings.autosave || !activeTab.dirty) {
+    if (!activeTab || !activeTab.path || !settings.autosave || !activeTab.dirty) {
       return;
     }
 
@@ -396,6 +567,8 @@ function App() {
       const modifier = event.metaKey || event.ctrlKey;
 
       if (event.key === "Escape") {
+        setWorkspaceMenu(null);
+        setFileAction(null);
         setPaletteOpen(false);
         setSettingsOpen(false);
       }
@@ -436,28 +609,174 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [commandContext, setPaletteOpen, setSettingsOpen, setSidebarMode, setSidebarOpen]);
 
+  useEffect(() => {
+    const closeWorkspaceMenu = () => setWorkspaceMenu(null);
+    window.addEventListener("click", closeWorkspaceMenu);
+    window.addEventListener("resize", closeWorkspaceMenu);
+
+    return () => {
+      window.removeEventListener("click", closeWorkspaceMenu);
+      window.removeEventListener("resize", closeWorkspaceMenu);
+    };
+  }, []);
+
+  function startSidebarResize(event: PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = sidebarWidth;
+
+    const handlePointerMove = (moveEvent: globalThis.PointerEvent) => {
+      setSidebarWidth(Math.min(440, Math.max(180, startWidth + moveEvent.clientX - startX)));
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  }
+
+  function openWorkspaceMenu(event: MouseEvent<HTMLElement>, node: FileNode) {
+    event.preventDefault();
+    event.stopPropagation();
+    setWorkspaceMenu({
+      kind: node.isDir ? "folder" : "file",
+      node,
+      x: Math.min(event.clientX, window.innerWidth - 236),
+      y: Math.min(event.clientY, window.innerHeight - (node.isDir ? 240 : 164)),
+    });
+  }
+
+  async function runWorkspaceAction(action: () => Promise<void>) {
+    setWorkspaceMenu(null);
+    try {
+      await action();
+      await refreshWorkspace();
+      setOpenError(null);
+    } catch (error) {
+      setOpenError(String(error));
+    }
+  }
+
+  function startCreateFile(folderPath?: string | null) {
+    if (!folderPath) {
+      setOpenError("Open a workspace first, then press + to create a file in it.");
+      return;
+    }
+
+    setWorkspaceMenu(null);
+    setFileAction({
+      mode: "create-file",
+      targetPath: folderPath,
+      title: "New File",
+      value: "",
+    });
+  }
+
+  function startCreateFolder(folderPath: string) {
+    setWorkspaceMenu(null);
+    setFileAction({
+      mode: "create-folder",
+      targetPath: folderPath,
+      title: "New Folder",
+      value: "",
+    });
+  }
+
+  function startRenameWorkspaceNode(node: FileNode) {
+    const currentName = node.path.split("/").pop() ?? node.name;
+
+    setWorkspaceMenu(null);
+    setFileAction({
+      mode: "rename",
+      node,
+      targetPath: parentPath(node.path),
+      title: `Rename ${node.isDir ? "Folder" : "File"}`,
+      value: currentName,
+    });
+  }
+
+  async function submitFileAction(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!fileAction) {
+      return;
+    }
+
+    const name = fileAction.value.trim();
+    if (!isSafeNodeName(name)) {
+      setOpenError("Use a file/folder name without slashes.");
+      return;
+    }
+
+    try {
+      if (fileAction.mode === "create-file") {
+        const nextPath = joinPath(fileAction.targetPath, name);
+        await createTextFile(nextPath);
+        await refreshWorkspace();
+        await handleOpenFile(nextPath);
+      } else if (fileAction.mode === "create-folder") {
+        const nextPath = joinPath(fileAction.targetPath, name);
+        await createDirectory(nextPath);
+        await refreshWorkspace();
+        if (!workspace.expandedNodes.includes(fileAction.targetPath)) {
+          toggleNode(fileAction.targetPath);
+        }
+      } else if (fileAction.node) {
+        const currentName = fileAction.node.path.split("/").pop() ?? fileAction.node.name;
+        if (name !== currentName) {
+          const nextPath = joinPath(fileAction.targetPath, name);
+          await renamePath(fileAction.node.path, nextPath);
+          await refreshWorkspace();
+          if (!fileAction.node.isDir) {
+            await handleOpenFile(nextPath);
+          }
+        }
+      }
+
+      setFileAction(null);
+      setOpenError(null);
+    } catch (error) {
+      setOpenError(String(error));
+    }
+  }
+
+  async function deleteWorkspaceNode(node: FileNode) {
+    const message = node.isDir
+      ? `Delete folder "${node.name}" and everything inside it?`
+      : `Delete file "${node.name}"?`;
+    if (!confirm(message)) {
+      return;
+    }
+
+    await deletePath(node.path);
+  }
+
   return (
-    <main className={`app-shell theme-${settings.theme}`}>
+    <main
+      className={`app-shell theme-${settings.theme} ${isSidebarOpen ? "" : "sidebar-collapsed"}`}
+      style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
+    >
       <header className="titlebar">
         <div className="brand">
           <span className="brand-mark" />
           <div>
             <strong>PPText Editor</strong>
-            <span>{activeTab ? activeTab.path : "Ready"}</span>
+            <span>{activeTab ? activeTab.path || activeTab.name : workspace.rootPath ?? "Ready"}</span>
           </div>
         </div>
-        <div className="titlebar-actions">
-          <button onClick={() => void commandContext.openFolderPicker()}>Open Folder</button>
-          <button onClick={() => void commandContext.openFilePicker()}>Open File</button>
-          <button onClick={() => setPaletteOpen(true)}>Goto Anything</button>
-          <button onClick={() => setSettingsOpen(true)}>Settings</button>
+        <div className="titlebar-meta">
+          <span>{workspace.rootPath ? workspace.rootPath.split("/").pop() : "No workspace"}</span>
+          <span>{activeTab ? `${inFileResults.length} matches` : "No file"}</span>
         </div>
       </header>
 
-      <section className="utility-bar">
+      <section className="utility-bar" aria-hidden="true">
         <input
           ref={searchInputRef}
           className="utility-input"
+          tabIndex={-1}
           value={currentFileQuery}
           onChange={(event) => setCurrentFileQuery(event.currentTarget.value)}
           placeholder="Find in current file"
@@ -465,6 +784,7 @@ function App() {
         <input
           ref={workspaceSearchInputRef}
           className="utility-input"
+          tabIndex={-1}
           value={workspaceQuery}
           onChange={(event) => {
             setSidebarOpen(true);
@@ -473,10 +793,6 @@ function App() {
           }}
           placeholder="Search in workspace"
         />
-        <div className="utility-meta">
-          <span>{workspace.rootPath ? workspace.rootPath.split("/").pop() : "No workspace open"}</span>
-          <span>{activeTab ? `${inFileResults.length} matches in file` : "Open a file to start editing"}</span>
-        </div>
       </section>
 
       <section className="layout">
@@ -489,6 +805,9 @@ function App() {
               <button className={sidebarMode === "search" ? "active" : ""} onClick={() => setSidebarMode("search")}>
                 Search
               </button>
+              <button className="sidebar-collapse" title="Hide sidebar" onClick={() => setSidebarOpen(false)}>
+                ‹
+              </button>
             </div>
 
             {sidebarMode === "explorer" ? (
@@ -498,6 +817,7 @@ function App() {
                   <TreeNode
                     expandedNodes={workspace.expandedNodes}
                     node={fileTree}
+                    onContextMenu={openWorkspaceMenu}
                     onOpenFile={handleOpenFile}
                     onToggleNode={toggleNode}
                   />
@@ -539,45 +859,49 @@ function App() {
                 )}
               </div>
             )}
+            <div className="sidebar-resizer" role="separator" aria-orientation="vertical" onPointerDown={startSidebarResize} />
           </aside>
-        ) : null}
+        ) : (
+          <button className="sidebar-rail" title="Show sidebar" onClick={() => setSidebarOpen(true)}>
+            Explorer
+          </button>
+        )}
 
         <section className="editor-panel">
           <div className="tabs">
-            {tabs.length === 0 ? (
-              <div className="empty-tabs">No file open</div>
-            ) : (
-              tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  className={`tab ${tab.id === activeTabId ? "active" : ""}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  onAuxClick={(event) => {
-                    if (event.button === 1) {
-                      event.preventDefault();
-                      closeTab(tab.id);
-                    }
-                  }}
-                  onMouseDown={(event) => {
-                    if (event.button === 1) {
-                      event.preventDefault();
-                    }
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`tab ${tab.id === activeTabId ? "active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+                onAuxClick={(event) => {
+                  if (event.button === 1) {
+                    event.preventDefault();
+                    closeTab(tab.id);
+                  }
+                }}
+                onMouseDown={(event) => {
+                  if (event.button === 1) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <span>{tab.name}</span>
+                {tab.dirty ? <em>•</em> : null}
+                <span
+                  className="tab-close"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    closeTab(tab.id);
                   }}
                 >
-                  <span>{tab.name}</span>
-                  {tab.dirty ? <em>•</em> : null}
-                  <span
-                    className="tab-close"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      closeTab(tab.id);
-                    }}
-                  >
-                    ×
-                  </span>
-                </button>
-              ))
-            )}
+                  ×
+                </span>
+              </button>
+            ))}
+            <button className="new-tab-button" title="New File" onClick={createUntitledTab}>
+              +
+            </button>
           </div>
 
           <div className="editor-body">
@@ -609,7 +933,7 @@ function App() {
                     tabSize: settings.tabSize,
                     wordWrap: settings.wordWrap,
                   }}
-                  path={activeTab.path}
+                  path={activeTab.path || activeTab.id}
                   theme={settings.theme === "paper" ? "pptext-paper" : "pptext-sublime"}
                   value={activeTab.content}
                 />
@@ -658,7 +982,7 @@ function App() {
           </div>
 
           <footer className="status-bar">
-            <span>{activeTab ? activeTab.path : "No active file"}</span>
+            <span>{activeTab ? activeTab.path || activeTab.name : "No active file"}</span>
             <span>{`Ln ${cursorStatus.lineNumber}, Col ${cursorStatus.column}`}</span>
             <span>{activeTab?.language ?? "plaintext"}</span>
             <span>{`Spaces: ${settings.tabSize}`}</span>
@@ -710,6 +1034,66 @@ function App() {
               )}
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {workspaceMenu ? (
+        <div
+          className="workspace-context-menu"
+          style={{ left: workspaceMenu.x, top: workspaceMenu.y }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {workspaceMenu.kind === "folder" ? (
+            <>
+              <button onClick={() => startCreateFile(workspaceMenu.node.path)}>New File</button>
+              <button onClick={() => startRenameWorkspaceNode(workspaceMenu.node)}>Rename...</button>
+              <button onClick={() => void runWorkspaceAction(() => handleOpenFolder(workspaceMenu.node.path))}>Open Folder...</button>
+              <button onClick={() => void runWorkspaceAction(() => copyText(workspaceMenu.node.path))}>Copy Path</button>
+              <hr />
+              <button onClick={() => startCreateFolder(workspaceMenu.node.path)}>New Folder...</button>
+              <button onClick={() => void runWorkspaceAction(() => deleteWorkspaceNode(workspaceMenu.node))}>Delete Folder</button>
+              <button
+                onClick={() => {
+                  setWorkspaceMenu(null);
+                  setSidebarMode("search");
+                  setSidebarOpen(true);
+                  workspaceSearchInputRef.current?.focus();
+                }}
+              >
+                Find in Folder...
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => startRenameWorkspaceNode(workspaceMenu.node)}>Rename...</button>
+              <button onClick={() => void runWorkspaceAction(() => deleteWorkspaceNode(workspaceMenu.node))}>Delete File</button>
+              <button onClick={() => void runWorkspaceAction(() => revealItemInDir(workspaceMenu.node.path))}>Reveal in Finder</button>
+              <button onClick={() => void runWorkspaceAction(() => copyText(workspaceMenu.node.path))}>Copy Path</button>
+            </>
+          )}
+        </div>
+      ) : null}
+
+      {fileAction ? (
+        <div className="file-action-overlay" onClick={() => setFileAction(null)}>
+          <form className="file-action-dialog" onSubmit={submitFileAction} onClick={(event) => event.stopPropagation()}>
+            <div>
+              <strong>{fileAction.title}</strong>
+              <span>{trimPath(fileAction.targetPath, workspace.rootPath)}</span>
+            </div>
+            <input
+              autoFocus
+              value={fileAction.value}
+              placeholder={fileAction.mode === "create-folder" ? "folder-name" : "filename.ts"}
+              onChange={(event) => setFileAction({ ...fileAction, value: event.currentTarget.value })}
+            />
+            <div className="file-action-buttons">
+              <button type="button" onClick={() => setFileAction(null)}>
+                Cancel
+              </button>
+              <button type="submit">{fileAction.mode === "rename" ? "Rename" : "Create"}</button>
+            </div>
+          </form>
         </div>
       ) : null}
 
@@ -864,6 +1248,21 @@ type PaletteItem =
       kind: "file";
     };
 
+type WorkspaceMenuState = {
+  kind: "file" | "folder";
+  node: FileNode;
+  x: number;
+  y: number;
+};
+
+type FileActionState = {
+  mode: "create-file" | "create-folder" | "rename";
+  node?: FileNode;
+  targetPath: string;
+  title: string;
+  value: string;
+};
+
 function flattenFileTree(root: FileNode | null) {
   if (!root) {
     return [];
@@ -895,19 +1294,37 @@ function arraysEqual(left: string[], right: string[]) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function isSafeNodeName(name: string) {
+  return name.trim().length > 0 && !name.includes("/");
+}
+
+function joinPath(parent: string, child: string) {
+  return `${parent.replace(/\/$/, "")}/${child.trim()}`;
+}
+
+function parentPath(path: string) {
+  const lastSlash = path.lastIndexOf("/");
+  return lastSlash > 0 ? path.slice(0, lastSlash) : path;
+}
+
+async function copyText(value: string) {
+  await navigator.clipboard.writeText(value);
+}
+
 type TreeNodeProps = {
   expandedNodes: string[];
   node: FileNode;
+  onContextMenu: (event: MouseEvent<HTMLElement>, node: FileNode) => void;
   onOpenFile: (path: string) => Promise<void>;
   onToggleNode: (path: string) => void;
 };
 
-function TreeNode({ expandedNodes, node, onOpenFile, onToggleNode }: TreeNodeProps) {
+function TreeNode({ expandedNodes, node, onContextMenu, onOpenFile, onToggleNode }: TreeNodeProps) {
   const isExpanded = expandedNodes.includes(node.path);
 
   if (!node.isDir) {
     return (
-      <button className="tree-node file-node" onClick={() => void onOpenFile(node.path)}>
+      <button className="tree-node file-node" onClick={() => void onOpenFile(node.path)} onContextMenu={(event) => onContextMenu(event, node)}>
         {node.name}
       </button>
     );
@@ -915,7 +1332,7 @@ function TreeNode({ expandedNodes, node, onOpenFile, onToggleNode }: TreeNodePro
 
   return (
     <div className="tree-group">
-      <button className="tree-node folder-node" onClick={() => onToggleNode(node.path)}>
+      <button className="tree-node folder-node" onClick={() => onToggleNode(node.path)} onContextMenu={(event) => onContextMenu(event, node)}>
         <span>{isExpanded ? "▾" : "▸"}</span>
         <span>{node.name}</span>
       </button>
@@ -926,6 +1343,7 @@ function TreeNode({ expandedNodes, node, onOpenFile, onToggleNode }: TreeNodePro
               key={child.path}
               expandedNodes={expandedNodes}
               node={child}
+              onContextMenu={onContextMenu}
               onOpenFile={onOpenFile}
               onToggleNode={onToggleNode}
             />

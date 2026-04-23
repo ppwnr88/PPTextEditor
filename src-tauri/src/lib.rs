@@ -4,7 +4,10 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use tauri::{AppHandle, Manager};
+use tauri::{
+    menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu},
+    AppHandle, Emitter, Manager,
+};
 use walkdir::WalkDir;
 
 const MAX_TEXT_FILE_BYTES: u64 = 10 * 1024 * 1024;
@@ -187,6 +190,49 @@ fn write_file(path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn create_text_file(path: String) -> Result<(), String> {
+    let file_path = Path::new(&path);
+    if file_path.exists() {
+        return Err("A file or folder already exists at this path.".into());
+    }
+
+    fs::write(file_path, "").map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn create_directory(path: String) -> Result<(), String> {
+    let directory_path = Path::new(&path);
+    if directory_path.exists() {
+        return Err("A file or folder already exists at this path.".into());
+    }
+
+    fs::create_dir(directory_path).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn rename_path(path: String, new_path: String) -> Result<(), String> {
+    let source = Path::new(&path);
+    let destination = Path::new(&new_path);
+    if destination.exists() {
+        return Err("A file or folder already exists at the destination path.".into());
+    }
+
+    fs::rename(source, destination).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn delete_path(path: String) -> Result<(), String> {
+    let target = Path::new(&path);
+    let metadata = fs::metadata(target).map_err(|error| error.to_string())?;
+
+    if metadata.is_dir() {
+        fs::remove_dir_all(target).map_err(|error| error.to_string())
+    } else {
+        fs::remove_file(target).map_err(|error| error.to_string())
+    }
+}
+
+#[tauri::command]
 fn search_in_workspace(query: String, root_path: String) -> Result<Vec<SearchResult>, String> {
     if query.trim().is_empty() {
         return Ok(Vec::new());
@@ -322,12 +368,401 @@ mod tests {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .menu(|app| {
+            let action = |id: &str, text: &str, accelerator: Option<&str>| {
+                MenuItem::with_id(app, id, text, true, accelerator)
+            };
+            let disabled =
+                |id: &str, text: &str| MenuItem::with_id(app, id, text, false, None::<&str>);
+            let about = AboutMetadata {
+                name: Some("PPText Editor".into()),
+                version: Some(app.package_info().version.to_string()),
+                ..Default::default()
+            };
+
+            let app_menu = Submenu::with_items(
+                app,
+                "PPText Editor",
+                true,
+                &[
+                    &PredefinedMenuItem::about(app, Some("About PPText Editor"), Some(about))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &MenuItem::with_id(app, "settings", "Settings...", true, Some("Cmd+,"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::services(app, Some("Services"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::hide(app, Some("Hide PPText Editor"))?,
+                    &PredefinedMenuItem::hide_others(app, Some("Hide Others"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::quit(app, Some("Quit PPText Editor"))?,
+                ],
+            )?;
+            let file_menu = Submenu::with_items(
+                app,
+                "File",
+                true,
+                &[
+                    &action("native.new-file", "New File", Some("Cmd+N"))?,
+                    &action("native.open-file", "Open File...", Some("Cmd+O"))?,
+                    &action("native.open-folder", "Open Folder...", Some("Cmd+Shift+O"))?,
+                    &disabled("native.open", "Open...")?,
+                    &Submenu::with_items(
+                        app,
+                        "Open Recent",
+                        true,
+                        &[
+                            &disabled("native.reopen-closed-file", "Reopen Closed File")?,
+                            &PredefinedMenuItem::separator(app)?,
+                            &disabled("native.clear-recent", "Clear Items")?,
+                        ],
+                    )?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &action("native.save", "Save", Some("Cmd+S"))?,
+                    &action("native.save-as", "Save As...", Some("Cmd+Shift+S"))?,
+                    &disabled("native.save-all", "Save All")?,
+                    &disabled("native.print", "Print...")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.new-window", "New Window")?,
+                    &PredefinedMenuItem::close_window(app, Some("Close Window"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &action("native.close-file", "Close File", Some("Cmd+W"))?,
+                    &disabled("native.revert-file", "Revert File")?,
+                    &disabled("native.close-all-files", "Close All Files")?,
+                ],
+            )?;
+            let edit_menu = Submenu::with_items(
+                app,
+                "Edit",
+                true,
+                &[
+                    &PredefinedMenuItem::undo(app, None)?,
+                    &PredefinedMenuItem::redo(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::cut(app, None)?,
+                    &PredefinedMenuItem::copy(app, None)?,
+                    &PredefinedMenuItem::paste(app, None)?,
+                    &PredefinedMenuItem::select_all(app, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &Submenu::with_items(
+                        app,
+                        "Line",
+                        true,
+                        &[
+                            &disabled("native.indent", "Indent")?,
+                            &disabled("native.unindent", "Unindent")?,
+                            &disabled("native.reindent", "Reindent")?,
+                            &disabled("native.swap-line-up", "Swap Line Up")?,
+                            &disabled("native.swap-line-down", "Swap Line Down")?,
+                            &disabled("native.duplicate-line", "Duplicate Line")?,
+                            &disabled("native.delete-line", "Delete Line")?,
+                            &disabled("native.join-lines", "Join Lines")?,
+                        ],
+                    )?,
+                    &Submenu::with_items(
+                        app,
+                        "Comment",
+                        true,
+                        &[
+                            &disabled("native.toggle-comment", "Toggle Comment")?,
+                            &disabled("native.toggle-block-comment", "Toggle Block Comment")?,
+                        ],
+                    )?,
+                    &Submenu::with_items(
+                        app,
+                        "Convert Case",
+                        true,
+                        &[
+                            &disabled("native.title-case", "Title Case")?,
+                            &disabled("native.upper-case", "Upper Case")?,
+                            &disabled("native.lower-case", "Lower Case")?,
+                            &disabled("native.swap-case", "Swap Case")?,
+                        ],
+                    )?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.show-completions", "Show Completions")?,
+                    &disabled("native.sort-lines", "Sort Lines")?,
+                ],
+            )?;
+            let selection_menu = Submenu::with_items(
+                app,
+                "Selection",
+                true,
+                &[
+                    &disabled("native.split-selection-into-lines", "Split into Lines")?,
+                    &disabled("native.single-selection", "Single Selection")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::select_all(app, None)?,
+                    &disabled("native.expand-selection", "Expand Selection")?,
+                    &disabled("native.expand-selection-line", "Expand Selection to Line")?,
+                    &disabled("native.expand-selection-word", "Expand Selection to Word")?,
+                    &disabled("native.expand-selection-block", "Expand Selection to Block")?,
+                    &disabled("native.expand-selection-scope", "Expand Selection to Scope")?,
+                    &disabled(
+                        "native.expand-selection-brackets",
+                        "Expand Selection to Brackets",
+                    )?,
+                    &disabled(
+                        "native.expand-selection-indentation",
+                        "Expand Selection to Indentation",
+                    )?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.add-previous-line", "Add Previous Line")?,
+                    &disabled("native.add-next-line", "Add Next Line")?,
+                ],
+            )?;
+            let find_menu = Submenu::with_items(
+                app,
+                "Find",
+                true,
+                &[
+                    &action("native.find", "Find...", Some("Cmd+F"))?,
+                    &disabled("native.find-next", "Find Next")?,
+                    &disabled("native.find-previous", "Find Previous")?,
+                    &disabled("native.incremental-find", "Incremental Find")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.replace", "Replace...")?,
+                    &disabled("native.replace-next", "Replace Next")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.quick-find", "Quick Find")?,
+                    &disabled("native.quick-find-all", "Quick Find All")?,
+                    &disabled("native.quick-add-next", "Quick Add Next")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &action(
+                        "native.find-in-files",
+                        "Find in Files...",
+                        Some("Cmd+Shift+F"),
+                    )?,
+                    &Submenu::with_items(
+                        app,
+                        "Find Results",
+                        true,
+                        &[
+                            &disabled("native.show-find-results", "Show Find Results")?,
+                            &disabled("native.next-result", "Next Result")?,
+                            &disabled("native.previous-result", "Previous Result")?,
+                        ],
+                    )?,
+                    &disabled("native.cancel-find-in-files", "Cancel Find in Files")?,
+                ],
+            )?;
+            let view_menu = Submenu::with_items(
+                app,
+                "View",
+                true,
+                &[
+                    &Submenu::with_items(
+                        app,
+                        "Side Bar",
+                        true,
+                        &[
+                            &action("native.toggle-sidebar", "Toggle Side Bar", Some("Cmd+K"))?,
+                            &disabled("native.show-open-files", "Show Open Files")?,
+                        ],
+                    )?,
+                    &disabled("native.toggle-minimap", "Toggle Minimap")?,
+                    &disabled("native.toggle-tabs", "Toggle Tabs")?,
+                    &disabled("native.toggle-status-bar", "Toggle Status Bar")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::fullscreen(app, None)?,
+                    &disabled("native.distraction-free", "Enter Distraction Free Mode")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &Submenu::with_items(
+                        app,
+                        "Layout",
+                        true,
+                        &[
+                            &disabled("native.layout-single", "Single")?,
+                            &disabled("native.layout-columns-2", "Columns: 2")?,
+                            &disabled("native.layout-columns-3", "Columns: 3")?,
+                            &disabled("native.layout-rows-2", "Rows: 2")?,
+                            &disabled("native.layout-grid-4", "Grid: 4")?,
+                        ],
+                    )?,
+                    &Submenu::with_items(
+                        app,
+                        "Indentation",
+                        true,
+                        &[
+                            &disabled("native.indent-spaces", "Indent Using Spaces")?,
+                            &PredefinedMenuItem::separator(app)?,
+                            &action("native.tab-size-2", "Tab Width: 2", None)?,
+                            &action("native.tab-size-4", "Tab Width: 4", None)?,
+                            &action("native.tab-size-8", "Tab Width: 8", None)?,
+                        ],
+                    )?,
+                    &action("native.toggle-word-wrap", "Word Wrap", None)?,
+                ],
+            )?;
+            let goto_menu = Submenu::with_items(
+                app,
+                "Goto",
+                true,
+                &[
+                    &action("native.goto-anything", "Goto Anything...", Some("Cmd+P"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.goto-symbol", "Goto Symbol...")?,
+                    &disabled("native.goto-symbol-project", "Goto Symbol in Project...")?,
+                    &disabled("native.goto-definition", "Goto Definition...")?,
+                    &disabled("native.goto-reference", "Goto Reference...")?,
+                    &disabled("native.goto-line", "Goto Line...")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.jump-back", "Jump Back")?,
+                    &disabled("native.jump-forward", "Jump Forward")?,
+                    &Submenu::with_items(
+                        app,
+                        "Switch File",
+                        true,
+                        &[
+                            &action("native.next-file", "Next File", Some("Cmd+Alt+Right"))?,
+                            &action(
+                                "native.previous-file",
+                                "Previous File",
+                                Some("Cmd+Alt+Left"),
+                            )?,
+                        ],
+                    )?,
+                    &Submenu::with_items(
+                        app,
+                        "Bookmarks",
+                        true,
+                        &[
+                            &disabled("native.toggle-bookmark", "Toggle Bookmark")?,
+                            &disabled("native.next-bookmark", "Next Bookmark")?,
+                            &disabled("native.previous-bookmark", "Previous Bookmark")?,
+                            &disabled("native.clear-bookmarks", "Clear Bookmarks")?,
+                        ],
+                    )?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.matching-bracket", "Jump to Matching Bracket")?,
+                ],
+            )?;
+            let tools_menu = Submenu::with_items(
+                app,
+                "Tools",
+                true,
+                &[
+                    &action(
+                        "native.command-palette",
+                        "Command Palette...",
+                        Some("Cmd+Shift+P"),
+                    )?,
+                    &disabled("native.snippets", "Snippets...")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &Submenu::with_items(
+                        app,
+                        "Build System",
+                        true,
+                        &[
+                            &disabled("native.build-system-auto", "Automatic")?,
+                            &disabled("native.new-build-system", "New Build System...")?,
+                        ],
+                    )?,
+                    &disabled("native.build", "Build")?,
+                    &disabled("native.build-with", "Build With...")?,
+                    &disabled("native.cancel-build", "Cancel Build")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.record-macro", "Record Macro")?,
+                    &disabled("native.playback-macro", "Playback Macro")?,
+                    &disabled("native.save-macro", "Save Macro...")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &Submenu::with_items(
+                        app,
+                        "Developer",
+                        true,
+                        &[
+                            &disabled("native.new-plugin", "New Plugin...")?,
+                            &disabled("native.new-snippet", "New Snippet...")?,
+                            &disabled("native.new-syntax", "New Syntax...")?,
+                            &disabled("native.show-scope-name", "Show Scope Name")?,
+                        ],
+                    )?,
+                ],
+            )?;
+            let project_menu = Submenu::with_items(
+                app,
+                "Project",
+                true,
+                &[
+                    &disabled("native.open-project", "Open Project...")?,
+                    &disabled("native.switch-project", "Switch Project...")?,
+                    &disabled("native.quick-switch-project", "Quick Switch Project...")?,
+                    &Submenu::with_items(
+                        app,
+                        "Open Recent",
+                        true,
+                        &[
+                            &disabled(
+                                "native.project-recent-empty",
+                                "Recent projects will appear here",
+                            )?,
+                            &PredefinedMenuItem::separator(app)?,
+                            &disabled("native.clear-recent-projects", "Clear Items")?,
+                        ],
+                    )?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &disabled("native.save-project-as", "Save Project As...")?,
+                    &disabled("native.close-project", "Close Project")?,
+                    &disabled("native.edit-project", "Edit Project")?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &action(
+                        "native.add-folder",
+                        "Add Folder to Project...",
+                        Some("Cmd+Shift+O"),
+                    )?,
+                    &disabled("native.remove-folders", "Remove all Folders from Project")?,
+                    &action("native.refresh-folders", "Refresh Folders", None)?,
+                ],
+            )?;
+            let window_menu = Submenu::with_items(
+                app,
+                "Window",
+                true,
+                &[
+                    &PredefinedMenuItem::minimize(app, None)?,
+                    &PredefinedMenuItem::maximize(app, None)?,
+                ],
+            )?;
+            let help_menu = Submenu::new(app, "Help", true)?;
+
+            Menu::with_items(
+                app,
+                &[
+                    &app_menu,
+                    &file_menu,
+                    &edit_menu,
+                    &selection_menu,
+                    &find_menu,
+                    &view_menu,
+                    &goto_menu,
+                    &tools_menu,
+                    &project_menu,
+                    &window_menu,
+                    &help_menu,
+                ],
+            )
+        })
+        .on_menu_event(|app, event| {
+            let id = event.id().as_ref();
+            if id == "settings" {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.emit("native-menu-settings", ());
+                }
+            } else if id.starts_with("native.") {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.emit("native-menu-command", id.to_string());
+                }
+            }
+        })
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             list_dir,
             read_text_file,
             write_file,
+            create_text_file,
+            create_directory,
+            rename_path,
+            delete_path,
             search_in_workspace,
             load_settings,
             save_settings

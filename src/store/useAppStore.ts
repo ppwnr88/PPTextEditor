@@ -14,7 +14,7 @@ type AppStore = {
   workspaceQuery: string;
   workspaceResults: SearchResult[];
   closeTab: (tabId: string) => void;
-  markTabSaved: (tabId: string) => void;
+  markTabSaved: (tabId: string, savedTab?: Pick<EditorTab, "id" | "language" | "name" | "path">) => void;
   openTab: (tab: EditorTab) => void;
   setActiveTab: (tabId: string) => void;
   setCurrentFileQuery: (query: string) => void;
@@ -94,11 +94,18 @@ export const useAppStore = create<AppStore>((set) => ({
         },
       };
     }),
-  markTabSaved: (tabId) =>
+  markTabSaved: (tabId, savedTab) =>
     set((state) => ({
       tabs: state.tabs.map((tab) =>
-        tab.id === tabId ? { ...tab, dirty: false, originalContent: tab.content } : tab,
+        tab.id === tabId ? { ...tab, ...savedTab, dirty: false, originalContent: tab.content } : tab,
       ),
+      workspace: savedTab
+        ? {
+            ...state.workspace,
+            activeTabId: savedTab.id,
+            openTabs: state.tabs.map((tab) => (tab.id === tabId ? savedTab.id : tab.id)),
+          }
+        : state.workspace,
     })),
   openTab: (tab) =>
     set((state) => {

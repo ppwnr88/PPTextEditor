@@ -33,6 +33,22 @@ export function writeFile(path: string, content: string) {
   return invoke<void>("write_file", { content, path });
 }
 
+export function createTextFile(path: string) {
+  return invoke<void>("create_text_file", { path });
+}
+
+export function createDirectory(path: string) {
+  return invoke<void>("create_directory", { path });
+}
+
+export function renamePath(path: string, newPath: string) {
+  return invoke<void>("rename_path", { newPath, path });
+}
+
+export function deletePath(path: string) {
+  return invoke<void>("delete_path", { path });
+}
+
 export function searchInWorkspace(query: string, rootPath: string) {
   return invoke<SearchResult[]>("search_in_workspace", { query, rootPath });
 }

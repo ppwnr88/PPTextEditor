@@ -37,7 +37,7 @@
             <p class="hero-lede">
               PPText Editor is built for local workspaces, fast file switching, clean writing flow, and a crisp
               Sublime-inspired editing feel with practical touches like middle-click tab closing, GitHub connection,
-              and a cleaner chrome with duplicate path bars removed.
+              preview tabs that reuse a single slot until you save, and a cleaner chrome with duplicate path bars removed.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="./downloads/PPText-Editor-latest-aarch64.dmg" download>
@@ -72,10 +72,10 @@
                 </aside>
                 <div class="code-panel">
                   <div class="tab-strip">
-                    <span>App.tsx</span>
+                    <span class="tab-preview">[uat] env</span>
                     <span>settings.json</span>
                     <span>note.yml</span>
-                    <span class="tab-hint">middle-click closes tabs</span>
+                    <span class="tab-hint">preview tabs stay italic until saved</span>
                   </div>
                   <pre><code><span class="token-purple">const</span> editor = <span class="token-blue">createWorkspace</span>({
   theme: <span class="token-green">"sublime"</span>,
@@ -129,7 +129,7 @@ editor.<span class="token-blue">open</span>(<span class="token-green">"local-pro
             <article class="feature-card" data-reveal>
               <span class="feature-icon">05</span>
               <h3>Tab control</h3>
-              <p>Close tabs with the mouse wheel click, the close button, or command palette flow.</p>
+              <p>Reuse a single preview tab while browsing files, keep it italic until save, and close tabs with middle-click.</p>
             </article>
             <article class="feature-card" data-reveal>
               <span class="feature-icon">06</span>

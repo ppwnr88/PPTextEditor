@@ -412,11 +412,15 @@ select:focus {
   border-top: 1px solid var(--accent);
 }
 
-.tab span:first-child {
+.tab-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tab.preview .tab-label {
+  font-style: italic;
 }
 
 .tab-close {

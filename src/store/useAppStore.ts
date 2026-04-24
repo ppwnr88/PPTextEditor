@@ -97,7 +97,7 @@ export const useAppStore = create<AppStore>((set) => ({
   markTabSaved: (tabId, savedTab) =>
     set((state) => ({
       tabs: state.tabs.map((tab) =>
-        tab.id === tabId ? { ...tab, ...savedTab, dirty: false, originalContent: tab.content } : tab,
+        tab.id === tabId ? { ...tab, ...savedTab, dirty: false, originalContent: tab.content, preview: false } : tab,
       ),
       workspace: savedTab
         ? {
@@ -110,7 +110,21 @@ export const useAppStore = create<AppStore>((set) => ({
   openTab: (tab) =>
     set((state) => {
       const existing = state.tabs.find((item) => item.id === tab.id);
-      const tabs = existing ? state.tabs : [...state.tabs, { ...tab, dirty: false }];
+      if (existing) {
+        return {
+          tabs: state.tabs,
+          workspace: {
+            ...state.workspace,
+            activeTabId: existing.id,
+            openTabs: state.tabs.map((item) => item.id),
+          },
+        };
+      }
+
+      const reusablePreviewTab = tab.preview ? state.tabs.find((item) => item.preview && !item.dirty) : undefined;
+      const tabs = reusablePreviewTab
+        ? state.tabs.map((item) => (item.id === reusablePreviewTab.id ? { ...tab, dirty: false } : item))
+        : [...state.tabs, { ...tab, dirty: false }];
 
       return {
         tabs,

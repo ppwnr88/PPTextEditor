@@ -344,6 +344,10 @@ h3 {
   font-size: 0.85rem;
 }
 
+.tab-strip .tab-preview {
+  font-style: italic;
+}
+
 .tab-strip .tab-hint {
   margin-left: auto;
   color: rgba(247, 241, 232, 0.46);

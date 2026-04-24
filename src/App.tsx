@@ -137,7 +137,7 @@ function App() {
     }
   }
 
-  async function handleOpenFile(path: string) {
+  async function handleOpenFile(path: string, options?: { preview?: boolean }) {
     try {
       const content = await readFile(path);
       openTab({
@@ -148,6 +148,7 @@ function App() {
         name: path.split("/").pop() ?? path,
         originalContent: content,
         path,
+        preview: options?.preview ?? true,
       });
       setOpenError(null);
       setSettings({
@@ -202,6 +203,7 @@ function App() {
       name,
       originalContent: "",
       path: "",
+      preview: false,
     });
   }
 
@@ -355,7 +357,7 @@ function App() {
           multiple: false,
         });
         if (typeof picked === "string") {
-          await handleOpenFile(picked);
+          await handleOpenFile(picked, { preview: false });
         }
       },
       openFolderPicker: async () => {
@@ -715,7 +717,7 @@ function App() {
         const nextPath = joinPath(fileAction.targetPath, name);
         await createTextFile(nextPath);
         await refreshWorkspace();
-        await handleOpenFile(nextPath);
+        await handleOpenFile(nextPath, { preview: false });
       } else if (fileAction.mode === "create-folder") {
         const nextPath = joinPath(fileAction.targetPath, name);
         await createDirectory(nextPath);
@@ -730,7 +732,7 @@ function App() {
           await renamePath(fileAction.node.path, nextPath);
           await refreshWorkspace();
           if (!fileAction.node.isDir) {
-            await handleOpenFile(nextPath);
+            await handleOpenFile(nextPath, { preview: false });
           }
         }
       }
@@ -858,7 +860,7 @@ function App() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                className={`tab ${tab.id === activeTabId ? "active" : ""}`}
+                className={`tab ${tab.id === activeTabId ? "active" : ""} ${tab.preview && !tab.dirty ? "preview" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
                 onAuxClick={(event) => {
                   if (event.button === 1) {
@@ -872,7 +874,7 @@ function App() {
                   }
                 }}
               >
-                <span>{tab.name}</span>
+                <span className="tab-label">{tab.name}</span>
                 {tab.dirty ? <em>•</em> : null}
                 <span
                   className="tab-close"

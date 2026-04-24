@@ -16,6 +16,7 @@ export type EditorTab = {
   content: string;
   originalContent: string;
   dirty: boolean;
+  preview: boolean;
 };
 
 export type WorkspaceState = {

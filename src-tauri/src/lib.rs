@@ -3,6 +3,7 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
+    time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{
     menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu},
@@ -231,6 +232,41 @@ fn delete_path(path: String) -> Result<(), String> {
     } else {
         fs::remove_file(target).map_err(|error| error.to_string())
     }
+}
+
+#[tauri::command]
+fn create_print_preview(name: String, html: String) -> Result<String, String> {
+    let safe_name = name
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.') {
+                character
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>()
+        .trim_matches('-')
+        .chars()
+        .take(48)
+        .collect::<String>();
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| error.to_string())?
+        .as_millis();
+    let file_name = format!(
+        "pptext-print-{}-{}.html",
+        if safe_name.is_empty() {
+            "untitled"
+        } else {
+            &safe_name
+        },
+        timestamp
+    );
+    let path = std::env::temp_dir().join(file_name);
+
+    fs::write(&path, html).map_err(|error| error.to_string())?;
+    Ok(path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
@@ -781,6 +817,7 @@ pub fn run() {
             create_directory,
             rename_path,
             delete_path,
+            create_print_preview,
             search_in_workspace,
             load_settings,
             save_settings

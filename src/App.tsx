@@ -12,13 +12,14 @@ import {
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { listen } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import "./App.css";
 import { createCoreCommands } from "./lib/commands";
 import { extensionRegistry } from "./lib/extensions";
 import { configureMonaco, getMonacoLanguage } from "./lib/monaco";
 import {
   createDirectory,
+  createPrintPreview,
   createTextFile,
   deletePath,
   loadSettings,
@@ -227,6 +228,24 @@ function App() {
     editorRef.current?.focus();
   }
 
+  async function printActiveTab() {
+    if (!activeTab) {
+      setOpenError("Open a file before printing.");
+      return;
+    }
+
+    try {
+      const previewPath = await createPrintPreview(
+        activeTab.name,
+        createPrintableDocument(activeTab.name, activeTab.path, activeTab.content),
+      );
+      await openPath(previewPath);
+      setOpenError(null);
+    } catch (error) {
+      setOpenError(`Could not prepare print preview: ${String(error)}`);
+    }
+  }
+
   async function handleNativeMenuCommand(command: string) {
     switch (command) {
       case "native.new-file":
@@ -246,7 +265,7 @@ function App() {
         await handleSaveActiveTab(true);
         break;
       case "native.print":
-        window.print();
+        await printActiveTab();
         break;
       case "native.close-file":
         if (activeTabId) {
@@ -1358,6 +1377,71 @@ function parentPath(path: string) {
 
 async function copyText(value: string) {
   await navigator.clipboard.writeText(value);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function createPrintableDocument(name: string, path: string, content: string) {
+  const safeName = escapeHtml(name);
+  const safePath = escapeHtml(path || "Untitled");
+  const safeContent = escapeHtml(content);
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${safeName}</title>
+    <style>
+      :root {
+        color: #1b1f24;
+        font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      }
+
+      body {
+        margin: 32px;
+      }
+
+      header {
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #d8dde5;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 18px;
+      }
+
+      p {
+        margin: 0;
+        color: #5f6b7a;
+        font-size: 11px;
+        word-break: break-all;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font: 11px/1.48 "SF Mono", Menlo, Monaco, Consolas, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>${safeName}</h1>
+      <p>${safePath}</p>
+    </header>
+    <pre>${safeContent}</pre>
+  </body>
+</html>`;
 }
 
 type TreeNodeProps = {

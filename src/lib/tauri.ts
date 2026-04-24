@@ -53,8 +53,8 @@ export function searchInWorkspace(query: string, rootPath: string) {
   return invoke<SearchResult[]>("search_in_workspace", { query, rootPath });
 }
 
-export function createPrintPreview(name: string, html: string) {
-  return invoke<string>("create_print_preview", { html, name });
+export function openPrintPreview(name: string, html: string) {
+  return invoke<string>("open_print_preview", { html, name });
 }
 
 export async function loadSettings() {

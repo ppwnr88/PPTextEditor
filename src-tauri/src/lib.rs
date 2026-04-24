@@ -3,6 +3,7 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
+    process::Command,
     time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{
@@ -235,7 +236,7 @@ fn delete_path(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn create_print_preview(name: String, html: String) -> Result<String, String> {
+fn open_print_preview(name: String, html: String) -> Result<String, String> {
     let safe_name = name
         .chars()
         .map(|character| {
@@ -266,6 +267,10 @@ fn create_print_preview(name: String, html: String) -> Result<String, String> {
     let path = std::env::temp_dir().join(file_name);
 
     fs::write(&path, html).map_err(|error| error.to_string())?;
+    Command::new("open")
+        .arg(&path)
+        .status()
+        .map_err(|error| error.to_string())?;
     Ok(path.to_string_lossy().to_string())
 }
 
@@ -817,7 +822,7 @@ pub fn run() {
             create_directory,
             rename_path,
             delete_path,
-            create_print_preview,
+            open_print_preview,
             search_in_workspace,
             load_settings,
             save_settings

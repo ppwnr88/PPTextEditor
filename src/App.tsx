@@ -12,18 +12,18 @@ import {
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { listen } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import "./App.css";
 import { createCoreCommands } from "./lib/commands";
 import { extensionRegistry } from "./lib/extensions";
 import { configureMonaco, getMonacoLanguage } from "./lib/monaco";
 import {
   createDirectory,
-  createPrintPreview,
   createTextFile,
   deletePath,
   loadSettings,
   listDir,
+  openPrintPreview,
   readFile,
   renamePath,
   saveSettings,
@@ -235,11 +235,10 @@ function App() {
     }
 
     try {
-      const previewPath = await createPrintPreview(
+      await openPrintPreview(
         activeTab.name,
         createPrintableDocument(activeTab.name, activeTab.path, activeTab.content),
       );
-      await openPath(previewPath);
       setOpenError(null);
     } catch (error) {
       setOpenError(`Could not prepare print preview: ${String(error)}`);

@@ -1,4 +1,4 @@
-export type ThemeMode = "sublime" | "paper";
+export type ThemeMode = "ember" | "paper";
 export type SidebarMode = "explorer" | "search";
 
 export type FileNode = {

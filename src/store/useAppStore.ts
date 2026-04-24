@@ -47,7 +47,7 @@ const defaultSettings: AppSettings = {
   recentFiles: [],
   recentFolders: [],
   tabSize: 2,
-  theme: "sublime",
+  theme: "ember",
   wordWrap: "off",
 };
 

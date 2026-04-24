@@ -77,7 +77,7 @@ body {
   color-scheme: light;
 }
 
-.theme-sublime {
+.theme-ember {
   background: var(--chrome-3);
   color: #f8f8f2;
 }
@@ -760,23 +760,23 @@ select:focus {
   border-radius: 2px;
 }
 
-.scheme-preview-sublime {
+.scheme-preview-ember {
   background: #272822;
 }
 
-.scheme-preview-sublime i:nth-child(1) {
+.scheme-preview-ember i:nth-child(1) {
   background: #f92672;
 }
 
-.scheme-preview-sublime i:nth-child(2) {
+.scheme-preview-ember i:nth-child(2) {
   background: #a6e22e;
 }
 
-.scheme-preview-sublime i:nth-child(3) {
+.scheme-preview-ember i:nth-child(3) {
   background: #e6db74;
 }
 
-.scheme-preview-sublime i:nth-child(4) {
+.scheme-preview-ember i:nth-child(4) {
   background: #66d9ef;
 }
 

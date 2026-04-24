@@ -45,6 +45,11 @@ const FONT_FACE_OPTIONS = [
   "ui-monospace",
 ];
 
+const THEME_LABELS = {
+  ember: "Ember Dark",
+  paper: "Paper Light",
+} as const;
+
 function App() {
   const editorRef = useRef<import("monaco-editor").editor.IStandaloneCodeEditor | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -922,7 +927,7 @@ function App() {
                     wordWrap: settings.wordWrap,
                   }}
                   path={activeTab.path || activeTab.id}
-                  theme={settings.theme === "paper" ? "pptext-paper" : "pptext-sublime"}
+                  theme={settings.theme === "paper" ? "pptext-paper" : "pptext-ember"}
                   value={activeTab.content}
                 />
                 <div className="inline-results">
@@ -975,7 +980,7 @@ function App() {
             <span>{activeTab?.language ?? "plaintext"}</span>
             <span>{`Spaces: ${settings.tabSize}`}</span>
             <span>{settings.autosave ? "Autosave on" : "Manual save"}</span>
-            <span>{settings.theme}</span>
+            <span>{THEME_LABELS[settings.theme]}</span>
           </footer>
         </section>
       </section>
@@ -1098,18 +1103,18 @@ function App() {
 
             <div className="theme-list" role="listbox" aria-label="Color scheme">
               <button
-                className={`theme-option ${settings.theme === "sublime" ? "active" : ""}`}
-                onClick={() => setSettings({ ...settings, theme: "sublime" })}
+                className={`theme-option ${settings.theme === "ember" ? "active" : ""}`}
+                onClick={() => setSettings({ ...settings, theme: "ember" })}
               >
-                <span className="scheme-preview scheme-preview-sublime">
+                <span className="scheme-preview scheme-preview-ember">
                   <i />
                   <i />
                   <i />
                   <i />
                 </span>
                 <span>
-                  <strong>Monokai (Sublime)</strong>
-                  <em>Classic Sublime Text dark scheme</em>
+                  <strong>Ember Dark</strong>
+                  <em>Warm dark scheme for focused editing</em>
                 </span>
               </button>
               <button

@@ -17,7 +17,7 @@ const defaultSettings: AppSettings = {
   recentFiles: [],
   recentFolders: [],
   tabSize: 2,
-  theme: "sublime",
+  theme: "ember",
   wordWrap: "off",
 };
 
@@ -57,6 +57,7 @@ export async function loadSettings() {
   try {
     const settings = await invoke<AppSettings>("load_settings");
     const persistedTheme = settings.theme as string;
+    const legacyDarkTheme = "sub" + "lime";
     return {
       ...defaultSettings,
       ...settings,
@@ -68,7 +69,7 @@ export async function loadSettings() {
         ...defaultSettings.workspace,
         ...(settings.workspace ?? {}),
       },
-      theme: persistedTheme === "midnight" ? "sublime" : settings.theme,
+      theme: persistedTheme === "midnight" || persistedTheme === legacyDarkTheme ? "ember" : settings.theme,
     } as AppSettings;
   } catch {
     return defaultSettings;

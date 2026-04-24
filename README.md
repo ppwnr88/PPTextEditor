@@ -1,8 +1,7 @@
 # PPText Editor
 
 PPText Editor is a keyboard-first desktop code editor built with `Tauri`, `Rust`, `React`, and `Monaco`.
-It is inspired by the fast, focused feel of Sublime Text, while keeping the product direction simple:
-clean chrome, local workspaces, fast file switching, and an editor that stays out of the way.
+It focuses on clean chrome, local workspaces, fast file switching, and an editor that stays out of the way.
 
 Landing page: [editor.wannarat.cc](https://editor.wannarat.cc)
 
@@ -29,8 +28,7 @@ Landing page: [editor.wannarat.cc](https://editor.wannarat.cc)
 
 ## Product Direction
 
-PPText Editor is not trying to clone every Sublime Text feature at once.
-The current version focuses on:
+PPText Editor keeps the product direction intentionally focused. The current version prioritizes:
 
 - fast local editing
 - clean, compact window chrome
@@ -52,7 +50,7 @@ Out of scope for now:
 - untitled tabs for new files
 - folder and file context menus in the explorer
 - resizable and collapsible sidebar
-- light and dark Sublime-inspired themes
+- light and dark built-in themes
 - configurable font face, font size, tab size, word wrap, and autosave
 - GitHub account connection via personal access token
 - native macOS-style app menu

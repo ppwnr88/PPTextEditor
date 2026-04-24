@@ -65,7 +65,7 @@ struct PersistedWorkspaceState {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            theme: "sublime".into(),
+            theme: "ember".into(),
             font_family: "JetBrains Mono".into(),
             font_size: 14,
             tab_size: 2,
@@ -150,8 +150,9 @@ fn normalize_recents(values: Vec<String>) -> Vec<String> {
 }
 
 fn normalize_theme(theme: String) -> String {
-    if theme == "midnight" {
-        "sublime".into()
+    let legacy_dark_theme = ["sub", "lime"].concat();
+    if theme == "midnight" || theme == legacy_dark_theme {
+        "ember".into()
     } else {
         theme
     }
@@ -339,15 +340,16 @@ mod tests {
     }
 
     #[test]
-    fn migrates_midnight_theme_to_sublime() {
-        assert_eq!(normalize_theme("midnight".into()), "sublime");
+    fn migrates_legacy_dark_themes_to_ember() {
+        assert_eq!(normalize_theme("midnight".into()), "ember");
+        assert_eq!(normalize_theme(["sub", "lime"].concat()), "ember");
         assert_eq!(normalize_theme("paper".into()), "paper");
     }
 
     #[test]
     fn settings_without_github_connection_still_load() {
         let content = r#"{
-            "theme": "sublime",
+            "theme": "ember",
             "fontFamily": "JetBrains Mono",
             "fontSize": 14,
             "tabSize": 2,

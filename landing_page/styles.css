@@ -125,6 +125,19 @@ a {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.github-icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.github-mark {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex: 0 0 auto;
+}
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 0.94fr) minmax(360px, 1.06fr);
@@ -215,6 +228,10 @@ h3 {
     transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease;
+}
+
+.button-with-icon {
+  gap: 8px;
 }
 
 .button:hover {
@@ -621,6 +638,16 @@ kbd {
 .download-card span,
 .download-note {
   color: var(--muted);
+}
+
+.download-card-icon strong {
+  display: inline-flex;
+  align-items: center;
+}
+
+.download-card-icon .github-mark {
+  width: 24px;
+  height: 24px;
 }
 
 .download-note {

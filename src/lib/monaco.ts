@@ -26,7 +26,7 @@ export function getMonacoLanguage(path: string) {
 }
 
 export function configureMonaco(instance: typeof monaco) {
-  instance.editor.defineTheme("pptext-sublime", {
+  instance.editor.defineTheme("pptext-ember", {
     base: "vs-dark",
     inherit: false,
     colors: {

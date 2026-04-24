@@ -36,7 +36,8 @@
             <h1>A focused editor that gets out of your way.</h1>
             <p class="hero-lede">
               PPText Editor is built for local workspaces, fast file switching, clean writing flow, and a crisp
-              Sublime-inspired editing feel with practical touches like middle-click tab closing and GitHub connection.
+              Sublime-inspired editing feel with practical touches like middle-click tab closing, GitHub connection,
+              and a cleaner chrome with duplicate path bars removed.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="./downloads/PPText-Editor-latest-aarch64.dmg" download>
@@ -60,7 +61,6 @@
                 <span class="dot red"></span>
                 <span class="dot yellow"></span>
                 <span class="dot green"></span>
-                <span class="window-title">workspace / pptext</span>
               </div>
               <div class="editor-preview">
                 <aside>
@@ -74,6 +74,7 @@
                   <div class="tab-strip">
                     <span>App.tsx</span>
                     <span>settings.json</span>
+                    <span>note.yml</span>
                     <span class="tab-hint">middle-click closes tabs</span>
                   </div>
                   <pre><code><span class="token-purple">const</span> editor = <span class="token-blue">createWorkspace</span>({
@@ -84,6 +85,11 @@
 });
 
 editor.<span class="token-blue">open</span>(<span class="token-green">"local-project"</span>);</code></pre>
+                  <div class="status-strip">
+                    <span>workspace/local-project/note.yml</span>
+                    <span>Ln 24, Col 127</span>
+                    <span>yaml</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -108,7 +114,7 @@ editor.<span class="token-blue">open</span>(<span class="token-green">"local-pro
             <article class="feature-card" data-reveal>
               <span class="feature-icon">02</span>
               <h3>Monaco editing</h3>
-              <p>Syntax highlighting, tabs, minimap support, and familiar editor behavior from day one.</p>
+              <p>Syntax highlighting, tighter tabs, cleaner window chrome, and familiar editor behavior from day one.</p>
             </article>
             <article class="feature-card" data-reveal>
               <span class="feature-icon">03</span>

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:macos-release": "pnpm tauri build --bundles app,dmg && node scripts/prepare_macos_dmg.mjs",
+    "build:macos-release": "pnpm tauri build --bundles app && node scripts/prepare_macos_app_zip.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",

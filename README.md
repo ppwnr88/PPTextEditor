@@ -93,7 +93,7 @@ Build the macOS app bundle:
 pnpm tauri build --bundles app
 ```
 
-Build the macOS app bundle and DMG:
+Build the macOS app bundle and website zip:
 
 ```sh
 pnpm build:macos-release
@@ -102,15 +102,15 @@ pnpm build:macos-release
 Latest local app output:
 
 - `src-tauri/target/release/bundle/macos/PPText Editor.app`
-- `src-tauri/target/release/bundle/dmg/PPText-Editor-macos-arm64.dmg`
+- `src-tauri/target/release/bundle/macos/PPText-Editor-macos-arm64.app.zip`
 
 ## Distribution
 
 ### macOS
 
-macOS downloads are built locally and published as a direct DMG file on the landing page:
+macOS downloads are built locally and published as a zipped `.app` bundle on the landing page:
 
-- `landing_page/downloads/PPText-Editor-macos-arm64.dmg`
+- `landing_page/downloads/PPText-Editor-macos-arm64.app.zip`
 
 ### Windows
 

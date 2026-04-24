@@ -758,14 +758,6 @@ function App() {
       className={`app-shell theme-${settings.theme} ${isSidebarOpen ? "" : "sidebar-collapsed"}`}
       style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
     >
-      <header className="titlebar">
-        <div className="titlebar-path">{activeTab ? activeTab.path || activeTab.name : workspace.rootPath ?? ""}</div>
-        <div className="titlebar-meta">
-          {workspace.rootPath ? <span>{workspace.rootPath.split("/").pop()}</span> : null}
-          {activeTab ? <span>{inFileResults.length} matches</span> : null}
-        </div>
-      </header>
-
       <section className="utility-bar" aria-hidden="true">
         <input
           ref={searchInputRef}

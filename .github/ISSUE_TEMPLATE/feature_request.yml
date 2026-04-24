@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest an improvement that fits PPText Editor's focused editor workflow
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What user problem are you trying to solve?
+      placeholder: Describe the workflow pain point.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to see?
+      placeholder: Describe the feature idea.
+    validations:
+      required: true
+  - type: textarea
+    id: fit
+    attributes:
+      label: Why this fits PPText Editor
+      description: Explain why this belongs in a focused code editor.
+      placeholder: Explain the product fit.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: What workarounds or alternatives did you try?

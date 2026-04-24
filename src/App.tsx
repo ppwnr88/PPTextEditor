@@ -1439,6 +1439,11 @@ function createPrintableDocument(name: string, path: string, content: string) {
       <p>${safePath}</p>
     </header>
     <pre>${safeContent}</pre>
+    <script>
+      window.addEventListener("load", () => {
+        setTimeout(() => window.print(), 250);
+      });
+    </script>
   </body>
 </html>`;
 }

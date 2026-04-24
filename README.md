@@ -27,3 +27,20 @@ pnpm build
 cd src-tauri
 cargo test
 ```
+
+## macOS Release Signing
+
+The GitHub Actions macOS release job now expects Apple signing credentials before it will publish a DMG.
+
+Required GitHub secrets for macOS releases:
+
+- `APPLE_CERTIFICATE`
+- `APPLE_CERTIFICATE_PASSWORD`
+- `KEYCHAIN_PASSWORD`
+
+For notarization, provide one of these credential sets:
+
+- `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`
+- `APPLE_API_ISSUER`, `APPLE_API_KEY`, `APPLE_API_PRIVATE_KEY`
+
+This matches Tauri's macOS signing and notarization flow for direct-download DMGs.

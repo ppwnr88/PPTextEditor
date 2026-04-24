@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.vercel/
 src-tauri/icons/icon.iconset/
 
 # Editor directories and files

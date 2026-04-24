@@ -222,6 +222,11 @@ function App() {
     setActiveTab(tabs[nextIndex].id);
   }
 
+  function runEditorAction(actionId: string) {
+    void editorRef.current?.getAction(actionId)?.run();
+    editorRef.current?.focus();
+  }
+
   async function handleNativeMenuCommand(command: string) {
     switch (command) {
       case "native.new-file":
@@ -240,18 +245,60 @@ function App() {
       case "native.save-as":
         await handleSaveActiveTab(true);
         break;
+      case "native.print":
+        window.print();
+        break;
       case "native.close-file":
         if (activeTabId) {
           closeTab(activeTabId);
         }
         break;
       case "native.find":
-        searchInputRef.current?.focus();
+        runEditorAction("actions.find");
+        break;
+      case "native.find-next":
+        runEditorAction("editor.action.nextMatchFindAction");
+        break;
+      case "native.find-previous":
+        runEditorAction("editor.action.previousMatchFindAction");
+        break;
+      case "native.replace":
+        runEditorAction("editor.action.startFindReplaceAction");
         break;
       case "native.find-in-files":
         setSidebarOpen(true);
         setSidebarMode("search");
-        workspaceSearchInputRef.current?.focus();
+        requestAnimationFrame(() => workspaceSearchInputRef.current?.focus());
+        break;
+      case "native.goto-line":
+        runEditorAction("editor.action.gotoLine");
+        break;
+      case "native.toggle-comment":
+        runEditorAction("editor.action.commentLine");
+        break;
+      case "native.toggle-block-comment":
+        runEditorAction("editor.action.blockComment");
+        break;
+      case "native.indent":
+        runEditorAction("editor.action.indentLines");
+        break;
+      case "native.unindent":
+        runEditorAction("editor.action.outdentLines");
+        break;
+      case "native.duplicate-line":
+        runEditorAction("editor.action.copyLinesDownAction");
+        break;
+      case "native.delete-line":
+        runEditorAction("editor.action.deleteLines");
+        break;
+      case "native.swap-line-up":
+        runEditorAction("editor.action.moveLinesUpAction");
+        break;
+      case "native.swap-line-down":
+        runEditorAction("editor.action.moveLinesDownAction");
+        break;
+      case "native.show-completions":
+        runEditorAction("editor.action.triggerSuggest");
         break;
       case "native.goto-anything":
       case "native.command-palette":
@@ -259,6 +306,10 @@ function App() {
         break;
       case "native.toggle-sidebar":
         setSidebarOpen(!isSidebarOpen);
+        break;
+      case "native.show-open-files":
+        setSidebarOpen(true);
+        setSidebarMode("explorer");
         break;
       case "native.toggle-word-wrap":
         setSettings({ ...settings, wordWrap: settings.wordWrap === "on" ? "off" : "on" });
@@ -792,19 +843,58 @@ function App() {
         {isSidebarOpen ? (
           <aside className="sidebar">
             <div className="sidebar-header">
-              <button className={sidebarMode === "explorer" ? "active" : ""} onClick={() => setSidebarMode("explorer")}>
-                Explorer
-              </button>
-              <button className={sidebarMode === "search" ? "active" : ""} onClick={() => setSidebarMode("search")}>
-                Search
-              </button>
+              <span className="sidebar-title">Open Files</span>
               <button className="sidebar-collapse" title="Hide sidebar" onClick={() => setSidebarOpen(false)}>
                 ‹
               </button>
             </div>
 
-            {sidebarMode === "explorer" ? (
-              <div className="sidebar-section">
+            <div className="sidebar-section">
+              <div className="open-files-list" aria-label="Open files">
+                {tabs.length > 0 ? (
+                  tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      className={`open-file-item ${tab.id === activeTabId ? "active" : ""} ${tab.preview && !tab.dirty ? "preview" : ""}`}
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      <span>{tab.name}</span>
+                      {tab.dirty ? <em>•</em> : null}
+                    </button>
+                  ))
+                ) : (
+                  <p className="empty-copy">No open files.</p>
+                )}
+              </div>
+
+              {sidebarMode === "search" || workspaceQuery || workspaceResults.length > 0 ? (
+                <div className="workspace-search-panel">
+                  <p className="section-label">Find in Files</p>
+                  <input
+                    ref={workspaceSearchInputRef}
+                    value={workspaceQuery}
+                    onChange={(event) => setWorkspaceQuery(event.currentTarget.value)}
+                    placeholder="Search workspace"
+                  />
+                  {workspaceResults.length > 0 ? (
+                    <div className="search-results">
+                      {workspaceResults.map((result) => (
+                        <button
+                          key={`${result.filePath}:${result.line}:${result.column}`}
+                          className="search-result"
+                          onClick={() => void handleOpenFile(result.filePath)}
+                        >
+                          <strong>{result.filePath.split("/").pop()}</strong>
+                          <span>{`${result.line}:${result.column} ${result.preview}`}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="empty-copy">Type a query to search the current workspace.</p>
+                  )}
+                </div>
+              ) : null}
+
                 <p className="section-label">Workspace</p>
                 {fileTree ? (
                   <TreeNode
@@ -817,46 +907,12 @@ function App() {
                 ) : (
                   <p className="empty-copy">Open a local folder to browse files.</p>
                 )}
-
-                {settings.recentFolders.length > 0 ? (
-                  <>
-                    <p className="section-label">Recent Folders</p>
-                    <div className="recent-list">
-                      {settings.recentFolders.map((path) => (
-                        <button key={path} className="recent-item" onClick={() => void handleOpenFolder(path)}>
-                          {path}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                ) : null}
               </div>
-            ) : (
-              <div className="sidebar-section">
-                <p className="section-label">Workspace Results</p>
-                {workspaceResults.length > 0 ? (
-                  <div className="search-results">
-                    {workspaceResults.map((result) => (
-                      <button
-                        key={`${result.filePath}:${result.line}:${result.column}`}
-                        className="search-result"
-                        onClick={() => void handleOpenFile(result.filePath)}
-                      >
-                        <strong>{result.filePath.split("/").pop()}</strong>
-                        <span>{`${result.line}:${result.column} ${result.preview}`}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="empty-copy">Type a query to search the current workspace.</p>
-                )}
-              </div>
-            )}
             <div className="sidebar-resizer" role="separator" aria-orientation="vertical" onPointerDown={startSidebarResize} />
           </aside>
         ) : (
           <button className="sidebar-rail" title="Show sidebar" onClick={() => setSidebarOpen(true)}>
-            Explorer
+            Open Files
           </button>
         )}
 

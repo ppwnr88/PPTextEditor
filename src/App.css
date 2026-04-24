@@ -108,6 +108,17 @@ body {
   background: linear-gradient(180deg, #3f3f3f 0%, #343434 100%);
 }
 
+.titlebar-path {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-left: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .brand {
   display: flex;
   align-items: center;

@@ -759,16 +759,10 @@ function App() {
       style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
     >
       <header className="titlebar">
-        <div className="brand">
-          <span className="brand-mark" />
-          <div>
-            <strong>PPText Editor</strong>
-            <span>{activeTab ? activeTab.path || activeTab.name : workspace.rootPath ?? "Ready"}</span>
-          </div>
-        </div>
+        <div className="titlebar-path">{activeTab ? activeTab.path || activeTab.name : workspace.rootPath ?? ""}</div>
         <div className="titlebar-meta">
-          <span>{workspace.rootPath ? workspace.rootPath.split("/").pop() : "No workspace"}</span>
-          <span>{activeTab ? `${inFileResults.length} matches` : "No file"}</span>
+          {workspace.rootPath ? <span>{workspace.rootPath.split("/").pop()}</span> : null}
+          {activeTab ? <span>{inFileResults.length} matches</span> : null}
         </div>
       </header>
 

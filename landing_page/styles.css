@@ -916,6 +916,28 @@ kbd {
     letter-spacing: -0.01em;
   }
 
+  .nav-links .github-icon-link {
+    flex: 0 0 30px;
+    width: 30px;
+    min-height: 30px;
+    padding: 0;
+  }
+
+  .nav-links .github-mark {
+    width: 14px;
+    height: 14px;
+  }
+
+  .button-with-icon .github-mark {
+    width: 15px;
+    height: 15px;
+  }
+
+  .download-card-icon .github-mark {
+    width: 18px;
+    height: 18px;
+  }
+
   h1 {
     font-size: clamp(2.75rem, 18vw, 3.7rem);
   }
@@ -988,6 +1010,12 @@ kbd {
   .nav-links a {
     padding-inline: 3px;
     font-size: 0.64rem;
+  }
+
+  .nav-links .github-icon-link {
+    flex-basis: 28px;
+    width: 28px;
+    min-height: 28px;
   }
 
   .hero-actions {

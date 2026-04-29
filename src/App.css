@@ -657,7 +657,7 @@ select:focus {
 
 .welcome-actions {
   gap: 0.4rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.9rem;
 }
 
 .welcome-actions button {
@@ -678,31 +678,38 @@ select:focus {
 
 .recent-list {
   display: grid;
-  gap: 0;
+  gap: 2px;
   max-height: min(50vh, 440px);
   overflow: auto;
-  border-top: 1px solid rgba(232, 232, 223, 0.08);
+  padding-top: 0.28rem;
+  border-top: 1px solid rgba(232, 232, 223, 0.055);
 }
 
 .recent-item {
-  min-height: 40px;
+  min-height: 36px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px;
+  grid-template-columns: minmax(0, 1fr) 30px;
   align-items: center;
-  border-bottom: 1px solid rgba(232, 232, 223, 0.07);
+  border: 0;
+  border-radius: 5px;
   background: transparent;
+}
+
+.recent-item:hover,
+.recent-item:focus-within {
+  background: rgba(255, 255, 255, 0.028);
 }
 
 .recent-main {
   min-width: 0;
-  min-height: 40px;
+  min-height: 36px;
   display: grid;
   grid-template-columns: minmax(150px, 0.4fr) minmax(0, 1fr);
   align-items: center;
   gap: 0.9rem;
-  padding: 0.48rem 0;
+  padding: 0.42rem 0 0.42rem 0.12rem;
   border: 0;
-  border-radius: 0;
+  border-radius: 5px;
   background: transparent;
 }
 
@@ -715,37 +722,49 @@ select:focus {
 }
 
 .recent-main strong {
-  color: rgba(248, 248, 242, 0.78);
+  color: rgba(248, 248, 242, 0.76);
   font-size: 0.78rem;
-  font-weight: 620;
+  font-weight: 590;
 }
 
 .recent-main span {
-  color: rgba(232, 232, 223, 0.42);
+  color: rgba(232, 232, 223, 0.36);
   font-size: 0.74rem;
 }
 
 .recent-main:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: transparent;
 }
 
 .recent-remove {
   width: 24px;
   height: 24px;
   min-height: 24px;
-  margin-left: 0.25rem;
+  display: grid;
+  place-items: center;
+  justify-self: end;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 5px;
   background: transparent;
-  color: rgba(232, 232, 223, 0.38);
-  font-size: 1rem;
+  color: rgba(232, 232, 223, 0.24);
+  font-size: 0.98rem;
   line-height: 1;
+  opacity: 0;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.recent-item:hover .recent-remove,
+.recent-remove:focus-visible {
+  opacity: 1;
 }
 
 .recent-remove:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(248, 248, 242, 0.82);
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(248, 248, 242, 0.7);
 }
 
 .inline-results {
@@ -1417,12 +1436,16 @@ select:focus {
 }
 
 .theme-paper .recent-list {
-  border-top-color: rgba(74, 63, 52, 0.09);
+  border-top-color: rgba(74, 63, 52, 0.075);
 }
 
 .theme-paper .recent-item {
   background: transparent;
-  border-color: rgba(74, 63, 52, 0.08);
+}
+
+.theme-paper .recent-item:hover,
+.theme-paper .recent-item:focus-within {
+  background: rgba(165, 85, 42, 0.035);
 }
 
 .theme-paper .recent-main strong {
@@ -1434,16 +1457,16 @@ select:focus {
 }
 
 .theme-paper .recent-main:hover {
-  background: rgba(165, 85, 42, 0.045);
+  background: transparent;
 }
 
 .theme-paper .recent-remove {
-  color: rgba(42, 50, 57, 0.42);
+  color: rgba(42, 50, 57, 0.3);
 }
 
 .theme-paper .recent-remove:hover {
-  background: rgba(165, 85, 42, 0.08);
-  color: rgba(29, 39, 49, 0.78);
+  background: rgba(165, 85, 42, 0.065);
+  color: rgba(29, 39, 49, 0.7);
 }
 
 .theme-paper .welcome-card button:hover,

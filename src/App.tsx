@@ -1343,8 +1343,8 @@ function App() {
                             <span>{trimPath(parentPath(path), workspace.rootPath)}</span>
                           </button>
                           <button
+                            aria-label={`Remove ${path.split("/").pop() ?? path} from recent files`}
                             className="recent-remove"
-                            title={`Remove ${path.split("/").pop() ?? path} from recent files`}
                             onClick={() => removeRecentFile(path)}
                           >
                             ×

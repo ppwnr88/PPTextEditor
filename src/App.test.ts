@@ -205,7 +205,7 @@ describe("app prompts and recent files", () => {
     });
 
     expect(await screen.findByText("missing.txt")).toBeInTheDocument();
-    fireEvent.click(screen.getByTitle("Remove missing.txt from recent files"));
+    fireEvent.click(screen.getByLabelText("Remove missing.txt from recent files"));
 
     await waitFor(() => {
       expect(screen.queryByText("missing.txt")).not.toBeInTheDocument();

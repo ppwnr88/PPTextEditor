@@ -1807,6 +1807,7 @@ function TreeNode({ expandedNodes, node, onContextMenu, onOpenFile, onToggleNode
   if (!node.isDir) {
     return (
       <button className="tree-node file-node" onClick={() => void onOpenFile(node.path)} onContextMenu={(event) => onContextMenu(event, node)}>
+        <span className="tree-disclosure" aria-hidden="true" />
         <FileIcon name={node.name} />
         <span>{node.name}</span>
       </button>
@@ -1816,7 +1817,9 @@ function TreeNode({ expandedNodes, node, onContextMenu, onOpenFile, onToggleNode
   return (
     <div className="tree-group">
       <button className="tree-node folder-node" onClick={() => onToggleNode(node.path)} onContextMenu={(event) => onContextMenu(event, node)}>
-        <span>{isExpanded ? "▾" : "▸"}</span>
+        <span className="tree-disclosure" aria-hidden="true">
+          {isExpanded ? "▾" : "▸"}
+        </span>
         <FolderIcon />
         <span>{node.name}</span>
       </button>

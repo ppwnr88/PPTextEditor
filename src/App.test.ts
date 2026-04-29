@@ -1,8 +1,29 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import App, { replaceEditorSelection } from "./App";
+import App, { isMissingFileError, replaceEditorSelection } from "./App";
 import { useAppStore } from "./store/useAppStore";
+import type { AppSettings } from "./types";
+
+const baseSettings: AppSettings = {
+  autosave: false,
+  fontFamily: "JetBrains Mono",
+  fontSize: 14,
+  github: {
+    connected: false,
+    token: "",
+    username: "",
+  },
+  recentFiles: [],
+  recentFolders: [],
+  tabSize: 2,
+  theme: "ember",
+  wordWrap: "off",
+  workspace: {
+    expandedNodes: [],
+    rootPath: null,
+  },
+};
 
 vi.mock("@monaco-editor/react", async () => {
   const React = await vi.importActual<typeof import("react")>("react");
@@ -67,6 +88,43 @@ vi.mock("@tauri-apps/plugin-opener", () => ({
   revealItemInDir: vi.fn(),
 }));
 
+vi.mock("./lib/tauri", () => ({
+  createDirectory: vi.fn(),
+  createTextFile: vi.fn(),
+  deletePath: vi.fn(),
+  isTauriRuntime: vi.fn(() => false),
+  listDir: vi.fn(),
+  loadSettings: vi.fn().mockResolvedValue({
+    autosave: false,
+    fontFamily: "JetBrains Mono",
+    fontSize: 14,
+    github: {
+      connected: false,
+      token: "",
+      username: "",
+    },
+    recentFiles: [],
+    recentFolders: [],
+    tabSize: 2,
+    theme: "ember",
+    wordWrap: "off",
+    workspace: {
+      expandedNodes: [],
+      rootPath: null,
+    },
+  }),
+  openPrintPreview: vi.fn(),
+  readFile: vi.fn((path: string) =>
+    path.includes("missing")
+      ? Promise.reject("No such file or directory (os error 2)")
+      : Promise.resolve("content"),
+  ),
+  renamePath: vi.fn(),
+  saveSettings: vi.fn().mockResolvedValue(undefined),
+  searchInWorkspace: vi.fn().mockResolvedValue([]),
+  writeFile: vi.fn(),
+}));
+
 afterEach(() => {
   useAppStore.setState({
     currentFileQuery: "",
@@ -74,6 +132,7 @@ afterEach(() => {
     isPaletteOpen: false,
     isSettingsOpen: false,
     isSidebarOpen: true,
+    settings: baseSettings,
     sidebarMode: "explorer",
     tabs: [],
     workspace: {
@@ -87,7 +146,7 @@ afterEach(() => {
   });
 });
 
-describe("tab close prompts", () => {
+describe("app prompts and recent files", () => {
   it("asks to save when a new tab is typed into and closed immediately", async () => {
     const { container } = render(React.createElement(App));
 
@@ -129,6 +188,58 @@ describe("tab close prompts", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Delete File" }));
 
     expect(await screen.findByText('Delete file "note.txt"?')).toBeInTheDocument();
+  });
+
+  it("removes a recent file from the welcome list manually", async () => {
+    render(React.createElement(App));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      useAppStore.setState({
+        settings: {
+          ...baseSettings,
+          recentFiles: ["/workspace/missing.txt"],
+        },
+      });
+    });
+
+    expect(await screen.findByText("missing.txt")).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("Remove missing.txt from recent files"));
+
+    await waitFor(() => {
+      expect(screen.queryByText("missing.txt")).not.toBeInTheDocument();
+    });
+  });
+
+  it("clears missing files from recent list when opening them", async () => {
+    render(React.createElement(App));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      useAppStore.setState({
+        settings: {
+          ...baseSettings,
+          recentFiles: ["/workspace/missing.txt"],
+        },
+      });
+    });
+
+    fireEvent.click(await screen.findByText("missing.txt"));
+
+    await waitFor(() => {
+      expect(screen.queryByText("missing.txt")).not.toBeInTheDocument();
+      expect(screen.queryByText(/No such file or directory/)).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe("isMissingFileError", () => {
+  it("recognizes common missing-file errors", () => {
+    expect(isMissingFileError("No such file or directory (os error 2)")).toBe(true);
+    expect(isMissingFileError("file not found")).toBe(true);
+    expect(isMissingFileError("permission denied")).toBe(false);
   });
 });
 

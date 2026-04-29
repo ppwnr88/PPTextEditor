@@ -671,7 +671,8 @@ select:focus {
 }
 
 .welcome-card button:hover,
-.welcome-card .recent-item:hover {
+.welcome-card .recent-main:hover,
+.welcome-card .recent-remove:hover {
   border-color: transparent;
 }
 
@@ -685,37 +686,66 @@ select:focus {
 
 .recent-item {
   min-height: 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  border-bottom: 1px solid rgba(232, 232, 223, 0.07);
+  background: transparent;
+}
+
+.recent-main {
+  min-width: 0;
+  min-height: 40px;
+  display: grid;
   grid-template-columns: minmax(150px, 0.4fr) minmax(0, 1fr);
   align-items: center;
   gap: 0.9rem;
   padding: 0.48rem 0;
   border: 0;
-  border-bottom: 1px solid rgba(232, 232, 223, 0.07);
   border-radius: 0;
   background: transparent;
 }
 
-.recent-item strong,
-.recent-item span {
+.recent-main strong,
+.recent-main span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.recent-item strong {
+.recent-main strong {
   color: rgba(248, 248, 242, 0.78);
   font-size: 0.78rem;
   font-weight: 620;
 }
 
-.recent-item span {
+.recent-main span {
   color: rgba(232, 232, 223, 0.42);
   font-size: 0.74rem;
 }
 
-.recent-item:hover {
+.recent-main:hover {
   background: rgba(255, 255, 255, 0.035);
+}
+
+.recent-remove {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  margin-left: 0.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(232, 232, 223, 0.38);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.recent-remove:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(248, 248, 242, 0.82);
 }
 
 .inline-results {
@@ -1395,20 +1425,30 @@ select:focus {
   border-color: rgba(74, 63, 52, 0.08);
 }
 
-.theme-paper .recent-item strong {
+.theme-paper .recent-main strong {
   color: rgba(29, 39, 49, 0.78);
 }
 
-.theme-paper .recent-item span {
+.theme-paper .recent-main span {
   color: rgba(42, 50, 57, 0.48);
 }
 
-.theme-paper .recent-item:hover {
+.theme-paper .recent-main:hover {
   background: rgba(165, 85, 42, 0.045);
 }
 
+.theme-paper .recent-remove {
+  color: rgba(42, 50, 57, 0.42);
+}
+
+.theme-paper .recent-remove:hover {
+  background: rgba(165, 85, 42, 0.08);
+  color: rgba(29, 39, 49, 0.78);
+}
+
 .theme-paper .welcome-card button:hover,
-.theme-paper .welcome-card .recent-item:hover {
+.theme-paper .welcome-card .recent-main:hover,
+.theme-paper .welcome-card .recent-remove:hover {
   border-color: transparent;
 }
 

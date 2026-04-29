@@ -182,8 +182,22 @@ function App() {
         recentFiles: [path, ...settings.recentFiles.filter((entry) => entry !== path)].slice(0, 12),
       });
     } catch (error) {
+      if (settings.recentFiles.includes(path) && isMissingFileError(error)) {
+        removeRecentFile(path);
+        setOpenError(null);
+        return;
+      }
+
       setOpenError(`${path.split("/").pop() ?? path}: ${String(error)}`);
     }
+  }
+
+  function removeRecentFile(path: string) {
+    setSettings({
+      ...settings,
+      recentFiles: settings.recentFiles.filter((entry) => entry !== path),
+    });
+    setOpenError(null);
   }
 
   async function saveTab(tab: EditorTab, forcePicker = false) {
@@ -1323,10 +1337,19 @@ function App() {
                   {settings.recentFiles.length > 0 ? (
                     <div className="recent-list">
                       {settings.recentFiles.map((path) => (
-                        <button key={path} className="recent-item" onClick={() => void handleOpenFile(path)}>
-                          <strong>{path.split("/").pop() ?? path}</strong>
-                          <span>{trimPath(parentPath(path), workspace.rootPath)}</span>
-                        </button>
+                        <div key={path} className="recent-item">
+                          <button className="recent-main" onClick={() => void handleOpenFile(path)}>
+                            <strong>{path.split("/").pop() ?? path}</strong>
+                            <span>{trimPath(parentPath(path), workspace.rootPath)}</span>
+                          </button>
+                          <button
+                            className="recent-remove"
+                            title={`Remove ${path.split("/").pop() ?? path} from recent files`}
+                            onClick={() => removeRecentFile(path)}
+                          >
+                            ×
+                          </button>
+                        </div>
                       ))}
                     </div>
                   ) : null}
@@ -1685,6 +1708,15 @@ function joinPath(parent: string, child: string) {
 function parentPath(path: string) {
   const lastSlash = path.lastIndexOf("/");
   return lastSlash > 0 ? path.slice(0, lastSlash) : path;
+}
+
+export function isMissingFileError(error: unknown) {
+  const message = String(error).toLowerCase();
+  return (
+    message.includes("no such file or directory") ||
+    message.includes("os error 2") ||
+    message.includes("not found")
+  );
 }
 
 async function copyText(value: string) {

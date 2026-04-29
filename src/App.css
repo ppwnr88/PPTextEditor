@@ -745,9 +745,9 @@ select:focus {
 }
 
 .recent-main strong {
-  color: rgba(248, 248, 242, 0.76);
+  color: rgba(248, 248, 242, 0.68);
   font-size: 0.78rem;
-  font-weight: 590;
+  font-weight: 430;
 }
 
 .recent-main span {
@@ -1465,7 +1465,7 @@ select:focus {
 }
 
 .theme-paper .recent-main strong {
-  color: rgba(29, 39, 49, 0.78);
+  color: rgba(29, 39, 49, 0.68);
 }
 
 .theme-paper .recent-main span {

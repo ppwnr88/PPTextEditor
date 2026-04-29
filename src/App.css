@@ -104,8 +104,7 @@ body {
   padding-left: 0.35rem;
 }
 
-.brand strong,
-.welcome-card h1 {
+.brand strong {
   font-family:
     "Sora", "Avenir Next", "IBM Plex Sans Thai", "IBM Plex Sans", sans-serif;
 }
@@ -404,7 +403,7 @@ select:focus {
   padding: 0.12rem 0.34rem 0.12rem 0.08rem;
   color: rgba(248, 248, 242, 0.78);
   font-size: 0.78rem;
-  font-weight: 610;
+  font-weight: 450;
 }
 
 .tree-node:hover {
@@ -430,7 +429,7 @@ select:focus {
 
 .file-node {
   color: rgba(232, 232, 223, 0.7);
-  font-weight: 520;
+  font-weight: 430;
 }
 
 .monaco-editor,
@@ -659,9 +658,11 @@ select:focus {
 
 .welcome-card h1 {
   margin: 0.28rem 0 1.1rem;
-  font-size: 1.28rem;
-  font-weight: 720;
-  line-height: 1.28;
+  color: rgba(248, 248, 242, 0.82);
+  font-family: inherit;
+  font-size: 1.12rem;
+  font-weight: 460;
+  line-height: 1.35;
 }
 
 .welcome-card p {
@@ -671,9 +672,10 @@ select:focus {
 }
 
 .welcome-card .eyebrow {
-  color: rgba(232, 232, 223, 0.42);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
+  color: rgba(232, 232, 223, 0.36);
+  font-size: 0.64rem;
+  font-weight: 430;
+  letter-spacing: 0.04em;
 }
 
 .welcome-actions {

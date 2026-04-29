@@ -104,6 +104,7 @@ function App() {
   } = useAppStore();
 
   const activeTabId = workspace.activeTabId;
+  const activeTabIdRef = useRef<string | null>(activeTabId);
   const editorSyncTimerRef = useRef<number | null>(null);
   const pendingEditorContentRef = useRef<{ content: string; tabId: string } | null>(null);
   const deferredWorkspaceQuery = useDeferredValue(workspaceQuery);
@@ -113,6 +114,10 @@ function App() {
     () => tabs.find((tab) => tab.id === activeTabId) ?? null,
     [activeTabId, tabs],
   );
+
+  useEffect(() => {
+    activeTabIdRef.current = activeTabId;
+  }, [activeTabId]);
 
   async function handleOpenFolder(path: string, expandedNodes?: string[]) {
     const root = await listDir(path);
@@ -267,7 +272,9 @@ function App() {
   }
 
   function requestCloseTab(tabId: string) {
-    const target = tabs.find((tab) => tab.id === tabId);
+    syncVisibleEditorContentNow();
+
+    const target = useAppStore.getState().tabs.find((tab) => tab.id === tabId);
     if (!target) {
       return;
     }
@@ -281,6 +288,8 @@ function App() {
   }
 
   function continueWindowCloseIfReady() {
+    syncVisibleEditorContentNow();
+
     const dirtyTab = useAppStore.getState().tabs.find((tab) => tab.dirty);
     if (dirtyTab) {
       setSavePrompt({ kind: "window", tabId: dirtyTab.id });
@@ -369,6 +378,22 @@ function App() {
 
     pendingEditorContentRef.current = null;
     updateTabContent(pending.tabId, pending.content);
+  }
+
+  function syncVisibleEditorContentNow() {
+    const tabId = activeTabIdRef.current;
+    const content = editorRef.current?.getModel()?.getValue();
+    if (!tabId || content === undefined) {
+      syncEditorContentNow();
+      return;
+    }
+
+    if (editorSyncTimerRef.current) {
+      window.clearTimeout(editorSyncTimerRef.current);
+      editorSyncTimerRef.current = null;
+    }
+    pendingEditorContentRef.current = null;
+    updateTabContent(tabId, content);
   }
 
   async function printActiveTab() {
@@ -918,6 +943,7 @@ function App() {
         return;
       }
 
+      syncVisibleEditorContentNow();
       const dirtyTab = useAppStore.getState().tabs.find((tab) => tab.dirty);
       if (!dirtyTab) {
         return;

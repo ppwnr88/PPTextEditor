@@ -1,21 +1,21 @@
 :root {
   --chrome-1: #3b3b3b;
   --chrome-2: #303030;
-  --chrome-3: #272822;
+  --chrome-3: #282923;
   --chrome-4: #22231f;
   --hairline: rgba(255, 255, 255, 0.09);
-  --muted: rgba(248, 248, 242, 0.62);
+  --muted: rgba(232, 232, 223, 0.64);
   --accent: #ff9800;
   --side-pad: 0.75rem;
-  color: #f8f8f2;
+  color: #e8e8df;
   background: var(--chrome-3);
   font-family:
     "JetBrains Mono", "IBM Plex Sans Thai", "IBM Plex Sans", "SF Mono",
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
   -webkit-text-size-adjust: 100%;
   color-scheme: dark;
 }
@@ -79,7 +79,7 @@ body {
 
 .theme-ember {
   background: var(--chrome-3);
-  color: #f8f8f2;
+  color: #e8e8df;
 }
 
 .utility-bar,
@@ -212,7 +212,7 @@ button {
 input,
 select {
   width: 100%;
-  background: #272822;
+  background: #282923;
   border: 1px solid #484848;
   min-height: 32px;
 }
@@ -354,7 +354,6 @@ select:focus {
   min-height: 26px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.45rem;
   padding: 0.24rem 0.48rem;
   border-color: transparent;
@@ -366,7 +365,8 @@ select:focus {
 .open-file-item:hover,
 .open-file-item.active {
   background: #3a3a34;
-  color: #f8f8f2;
+  border-color: transparent;
+  color: #e8e8df;
 }
 
 .open-file-item.preview span {
@@ -405,6 +405,126 @@ select:focus {
 
 .tree-node:hover {
   background: #383830;
+  border-color: transparent;
+}
+
+.tree-node > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monaco-editor,
+.monaco-editor .margin,
+.monaco-editor .monaco-editor-background {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+.open-file-item em {
+  margin-left: auto;
+}
+
+.node-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.folder-icon::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 3px;
+  width: 13px;
+  height: 10px;
+  border-radius: 2px;
+  background: #d8a657;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.folder-icon::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 1px;
+  width: 6px;
+  height: 4px;
+  border-radius: 2px 2px 0 0;
+  background: #e4b868;
+}
+
+.file-icon {
+  border: 1px solid rgba(232, 232, 223, 0.42);
+  border-radius: 2px;
+  background: #494b42;
+  color: #f1f1e8;
+  font-size: 0.42rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.file-icon::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -1px;
+  border-top: 5px solid #282923;
+  border-left: 5px solid rgba(232, 232, 223, 0.5);
+}
+
+.file-icon-js,
+.file-icon-jsx,
+.file-icon-ts,
+.file-icon-tsx {
+  background: #5f5b2d;
+  border-color: #d6c85d;
+  color: #fff6a8;
+}
+
+.file-icon-css,
+.file-icon-scss,
+.file-icon-sass {
+  background: #274d63;
+  border-color: #66d9ef;
+  color: #b7f3ff;
+}
+
+.file-icon-html,
+.file-icon-xml,
+.file-icon-svg {
+  background: #65333e;
+  border-color: #f92672;
+  color: #ffd1df;
+}
+
+.file-icon-json,
+.file-icon-yml,
+.file-icon-yaml,
+.file-icon-toml {
+  background: #5d4f28;
+  border-color: #e6db74;
+  color: #fff6b5;
+}
+
+.file-icon-md,
+.file-icon-txt {
+  background: #3d4c55;
+  border-color: #9aa6aa;
+}
+
+.file-icon-rs,
+.file-icon-go,
+.file-icon-py {
+  background: #3b4e39;
+  border-color: #a6e22e;
+  color: #e0ffb4;
 }
 
 .editor-body {
@@ -414,7 +534,7 @@ select:focus {
   border-width: 0;
   border-radius: 0;
   overflow: hidden;
-  background: #272822;
+  background: #282923;
 }
 
 .tabs {
@@ -504,28 +624,98 @@ select:focus {
 .welcome-state {
   min-height: 100%;
   display: grid;
-  place-items: center;
-  padding: clamp(1.25rem, 3vw, 2.25rem);
+  place-items: start center;
+  padding: clamp(3rem, 10vh, 6rem) clamp(1.25rem, 3vw, 2.25rem) 2rem;
 }
 
 .welcome-card {
-  width: min(760px, 100%);
-  padding: clamp(1.4rem, 3vw, 2.2rem);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 28px;
-  background: #303030;
+  width: min(640px, 100%);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .welcome-card h1 {
-  margin: 0.55rem 0 0.8rem;
-  font-size: clamp(2rem, 4vw, 3.25rem);
-  line-height: 1.05;
+  margin: 0.28rem 0 1.1rem;
+  font-size: 1.28rem;
+  font-weight: 720;
+  line-height: 1.28;
 }
 
 .welcome-card p {
-  max-width: 56ch;
-  color: rgba(248, 248, 242, 0.76);
-  line-height: 1.65;
+  margin: 0;
+  color: rgba(232, 232, 223, 0.58);
+  line-height: 1.5;
+}
+
+.welcome-card .eyebrow {
+  color: rgba(232, 232, 223, 0.42);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.welcome-actions {
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.welcome-actions button {
+  min-height: 29px;
+  padding: 0.28rem 0.58rem;
+  border-color: rgba(232, 232, 223, 0.12);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(248, 248, 242, 0.82);
+  font-size: 0.78rem;
+}
+
+.welcome-card button:hover,
+.welcome-card .recent-item:hover {
+  border-color: transparent;
+}
+
+.recent-list {
+  display: grid;
+  gap: 0;
+  max-height: min(50vh, 440px);
+  overflow: auto;
+  border-top: 1px solid rgba(232, 232, 223, 0.08);
+}
+
+.recent-item {
+  min-height: 40px;
+  grid-template-columns: minmax(150px, 0.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.48rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(232, 232, 223, 0.07);
+  border-radius: 0;
+  background: transparent;
+}
+
+.recent-item strong,
+.recent-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-item strong {
+  color: rgba(248, 248, 242, 0.78);
+  font-size: 0.78rem;
+  font-weight: 620;
+}
+
+.recent-item span {
+  color: rgba(232, 232, 223, 0.42);
+  font-size: 0.74rem;
+}
+
+.recent-item:hover {
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .inline-results {
@@ -694,6 +884,87 @@ select:focus {
   display: flex;
   justify-content: flex-end;
   gap: 0.45rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.confirm-dialog {
+  width: min(260px, calc(100vw - 2rem));
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.25rem 1rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 24px;
+  background: #1f2021;
+  color: #f1f1ea;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.confirm-dialog h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.confirm-dialog p {
+  margin: 0;
+  color: rgba(241, 241, 234, 0.84);
+  font-size: 0.9rem;
+  line-height: 1.48;
+}
+
+.confirm-actions {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.22rem;
+}
+
+.confirm-actions button {
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0.3rem 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: #303033;
+  color: #f6f6ef;
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.confirm-actions button:hover {
+  border-color: transparent;
+  background: #39393c;
+}
+
+.confirm-actions .confirm-primary {
+  background: #0a84ff;
+  color: white;
+}
+
+.confirm-actions .confirm-primary:hover {
+  background: #1b8fff;
+}
+
+.confirm-actions .confirm-danger {
+  background: #ff453a;
+  color: white;
+}
+
+.confirm-actions .confirm-danger:hover {
+  background: #ff5b52;
 }
 
 .file-palette-item strong::before {
@@ -1101,8 +1372,44 @@ select:focus {
   border-color: rgba(74, 63, 52, 0.16);
 }
 
+.theme-paper .welcome-card {
+  background: transparent;
+  border-color: transparent;
+}
+
 .theme-paper .welcome-card p {
-  color: rgba(42, 50, 57, 0.76);
+  color: rgba(42, 50, 57, 0.5);
+}
+
+.theme-paper .welcome-actions button {
+  background: rgba(74, 63, 52, 0.035);
+  border-color: rgba(74, 63, 52, 0.12);
+}
+
+.theme-paper .recent-list {
+  border-top-color: rgba(74, 63, 52, 0.09);
+}
+
+.theme-paper .recent-item {
+  background: transparent;
+  border-color: rgba(74, 63, 52, 0.08);
+}
+
+.theme-paper .recent-item strong {
+  color: rgba(29, 39, 49, 0.78);
+}
+
+.theme-paper .recent-item span {
+  color: rgba(42, 50, 57, 0.48);
+}
+
+.theme-paper .recent-item:hover {
+  background: rgba(165, 85, 42, 0.045);
+}
+
+.theme-paper .welcome-card button:hover,
+.theme-paper .welcome-card .recent-item:hover {
+  border-color: transparent;
 }
 
 .theme-paper .github-panel {
@@ -1173,8 +1480,34 @@ select:focus {
   box-shadow: 0 22px 64px rgba(70, 56, 43, 0.2);
 }
 
-.theme-paper .file-action-overlay {
+.theme-paper .file-action-overlay,
+.theme-paper .modal-overlay {
   background: rgba(70, 56, 43, 0.22);
+}
+
+.theme-paper .confirm-dialog {
+  color: #1d2731;
+  background: #fbf7f1;
+  border-color: rgba(74, 63, 52, 0.18);
+  box-shadow: 0 22px 64px rgba(70, 56, 43, 0.2);
+}
+
+.theme-paper .confirm-dialog p {
+  color: rgba(42, 50, 57, 0.72);
+}
+
+.theme-paper .confirm-actions button {
+  color: #1d2731;
+  background: #efe5d8;
+}
+
+.theme-paper .confirm-actions button:hover {
+  background: #e8dac9;
+}
+
+.theme-paper .confirm-actions .confirm-primary,
+.theme-paper .confirm-actions .confirm-danger {
+  color: white;
 }
 
 @media (max-width: 980px) {

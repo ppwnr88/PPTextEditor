@@ -13,10 +13,11 @@ import Editor, { type OnMount } from "@monaco-editor/react";
 import { listen } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 import { createCoreCommands } from "./lib/commands";
 import { extensionRegistry } from "./lib/extensions";
-import { configureMonaco, getMonacoLanguage } from "./lib/monaco";
+import { configureMonaco, getMonacoLanguage, preloadMonaco } from "./lib/monaco";
 import {
   createDirectory,
   createTextFile,
@@ -28,10 +29,11 @@ import {
   renamePath,
   saveSettings,
   searchInWorkspace,
+  isTauriRuntime,
   writeFile,
 } from "./lib/tauri";
 import { useAppStore } from "./store/useAppStore";
-import type { CommandDefinition, FileNode, SearchResult } from "./types";
+import type { CommandDefinition, EditorTab, FileNode, SearchResult } from "./types";
 
 const FONT_FACE_OPTIONS = [
   "JetBrains Mono",
@@ -53,6 +55,8 @@ const THEME_LABELS = {
 
 function App() {
   const editorRef = useRef<import("monaco-editor").editor.IStandaloneCodeEditor | null>(null);
+  const editorInputCleanupRef = useRef<(() => void) | null>(null);
+  const allowWindowCloseRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const workspaceSearchInputRef = useRef<HTMLInputElement | null>(null);
   const paletteInputRef = useRef<HTMLInputElement | null>(null);
@@ -65,6 +69,8 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(268);
   const [workspaceMenu, setWorkspaceMenu] = useState<WorkspaceMenuState | null>(null);
   const [fileAction, setFileAction] = useState<FileActionState | null>(null);
+  const [savePrompt, setSavePrompt] = useState<SavePromptState | null>(null);
+  const [deletePrompt, setDeletePrompt] = useState<DeletePromptState | null>(null);
 
   const {
     closeTab,
@@ -90,13 +96,16 @@ function App() {
     tabs,
     toggleNode,
     updateWorkspaceState,
-    updateActiveTabContent,
+    updateTabContent,
+    updateRenamedPath,
     workspace,
     workspaceQuery,
     workspaceResults,
   } = useAppStore();
 
   const activeTabId = workspace.activeTabId;
+  const editorSyncTimerRef = useRef<number | null>(null);
+  const pendingEditorContentRef = useRef<{ content: string; tabId: string } | null>(null);
   const deferredWorkspaceQuery = useDeferredValue(workspaceQuery);
   const deferredPaletteQuery = useDeferredValue(paletteQuery);
 
@@ -144,6 +153,12 @@ function App() {
   }
 
   async function handleOpenFile(path: string, options?: { preview?: boolean }) {
+    const existingTab = tabs.find((tab) => tab.id === path || tab.path === path);
+    if (existingTab) {
+      setActiveTab(existingTab.id);
+      return;
+    }
+
     try {
       const content = await readFile(path);
       openTab({
@@ -166,25 +181,28 @@ function App() {
     }
   }
 
-  async function handleSaveActiveTab(forcePicker = false) {
-    if (!activeTab) {
-      return;
+  async function saveTab(tab: EditorTab, forcePicker = false) {
+    const isActiveTarget = tab.id === activeTabId;
+    const content = isActiveTarget ? getActiveEditorContent() : tab.content;
+
+    if (isActiveTarget) {
+      syncEditorContentNow();
     }
 
     const savePath =
-      !forcePicker && activeTab.path
-        ? activeTab.path
+      !forcePicker && tab.path
+        ? tab.path
         : await save({
-            defaultPath: workspace.rootPath ? `${workspace.rootPath}/${activeTab.name}` : activeTab.name,
+            defaultPath: workspace.rootPath ? `${workspace.rootPath}/${tab.name}` : tab.name,
             title: "Save File",
           });
 
     if (!savePath) {
-      return;
+      return null;
     }
 
-    await writeFile(savePath, activeTab.content);
-    markTabSaved(activeTab.id, {
+    await writeFile(savePath, content);
+    markTabSaved(tab.id, {
       id: savePath,
       language: getMonacoLanguage(savePath),
       name: savePath.split("/").pop() ?? savePath,
@@ -195,6 +213,26 @@ function App() {
       recentFiles: [savePath, ...settings.recentFiles.filter((entry) => entry !== savePath)].slice(0, 12),
     });
     await refreshWorkspace();
+    return savePath;
+  }
+
+  async function handleSaveActiveTab(forcePicker = false) {
+    if (!activeTab) {
+      return;
+    }
+
+    await saveTab(activeTab, forcePicker);
+  }
+
+  async function autosaveTab(tab: NonNullable<typeof activeTab>) {
+    if (!tab.path || !tab.dirty) {
+      return;
+    }
+
+    const content = getActiveEditorContent();
+    syncEditorContentNow();
+    await writeFile(tab.path, content);
+    markTabSaved(tab.id);
   }
 
   function createUntitledTab() {
@@ -228,6 +266,111 @@ function App() {
     editorRef.current?.focus();
   }
 
+  function requestCloseTab(tabId: string) {
+    const target = tabs.find((tab) => tab.id === tabId);
+    if (!target) {
+      return;
+    }
+
+    if (target.dirty) {
+      setSavePrompt({ kind: "tab", tabId });
+      return;
+    }
+
+    closeTab(tabId);
+  }
+
+  function continueWindowCloseIfReady() {
+    const dirtyTab = useAppStore.getState().tabs.find((tab) => tab.dirty);
+    if (dirtyTab) {
+      setSavePrompt({ kind: "window", tabId: dirtyTab.id });
+      return;
+    }
+
+    setSavePrompt(null);
+    allowWindowCloseRef.current = true;
+    void getCurrentWindow().close();
+  }
+
+  async function savePromptTarget() {
+    if (!savePrompt) {
+      return null;
+    }
+
+    return useAppStore.getState().tabs.find((tab) => tab.id === savePrompt.tabId) ?? null;
+  }
+
+  async function handleSavePromptSave() {
+    const pending = savePrompt;
+    if (!pending) {
+      return;
+    }
+
+    const target = await savePromptTarget();
+    if (!target) {
+      setSavePrompt(null);
+      return;
+    }
+
+    const savedId = await saveTab(target);
+    if (!savedId) {
+      return;
+    }
+
+    closeTab(savedId);
+    if (pending.kind === "window") {
+      window.setTimeout(continueWindowCloseIfReady, 0);
+      return;
+    }
+
+    setSavePrompt(null);
+  }
+
+  function handleSavePromptDiscard() {
+    const pending = savePrompt;
+    if (!pending) {
+      return;
+    }
+
+    closeTab(pending.tabId);
+    if (pending.kind === "window") {
+      window.setTimeout(continueWindowCloseIfReady, 0);
+      return;
+    }
+
+    setSavePrompt(null);
+  }
+
+  function getActiveEditorContent() {
+    return editorRef.current?.getModel()?.getValue() ?? activeTab?.content ?? "";
+  }
+
+  function scheduleEditorContentSync(tabId: string, content: string) {
+    pendingEditorContentRef.current = { content, tabId };
+    if (editorSyncTimerRef.current) {
+      window.clearTimeout(editorSyncTimerRef.current);
+    }
+
+    editorSyncTimerRef.current = window.setTimeout(() => {
+      syncEditorContentNow();
+    }, 120);
+  }
+
+  function syncEditorContentNow() {
+    if (editorSyncTimerRef.current) {
+      window.clearTimeout(editorSyncTimerRef.current);
+      editorSyncTimerRef.current = null;
+    }
+
+    const pending = pendingEditorContentRef.current;
+    if (!pending) {
+      return;
+    }
+
+    pendingEditorContentRef.current = null;
+    updateTabContent(pending.tabId, pending.content);
+  }
+
   async function printActiveTab() {
     if (!activeTab) {
       setOpenError("Open a file before printing.");
@@ -237,7 +380,7 @@ function App() {
     try {
       await openPrintPreview(
         activeTab.name,
-        createPrintableDocument(activeTab.name, activeTab.path, activeTab.content),
+        createPrintableDocument(activeTab.name, activeTab.path, getActiveEditorContent()),
       );
       setOpenError(null);
     } catch (error) {
@@ -268,7 +411,7 @@ function App() {
         break;
       case "native.close-file":
         if (activeTabId) {
-          closeTab(activeTabId);
+          requestCloseTab(activeTabId);
         }
         break;
       case "native.find":
@@ -411,7 +554,7 @@ function App() {
       activeTab,
       closeActiveTab: () => {
         if (activeTabId) {
-          closeTab(activeTabId);
+          requestCloseTab(activeTabId);
         }
       },
       focusCurrentFileSearch: () => {
@@ -462,7 +605,7 @@ function App() {
     [
       activeTab,
       activeTabId,
-      closeTab,
+      requestCloseTab,
       isSidebarOpen,
       setPaletteOpen,
       setSettingsOpen,
@@ -528,12 +671,76 @@ function App() {
 
   const handleEditorMount: OnMount = (instance) => {
     editorRef.current = instance;
+    editorInputCleanupRef.current?.();
+
+    const editorDomNode = instance.getDomNode();
+    const replaceSelectedTextOnBeforeInput = (event: Event) => {
+      const inputEvent = event as InputEvent;
+      if (
+        inputEvent.defaultPrevented ||
+        inputEvent.isComposing ||
+        inputEvent.inputType !== "insertText" ||
+        !inputEvent.data
+      ) {
+        return;
+      }
+
+      const selection = instance.getSelection();
+      const model = instance.getModel();
+      if (!selection || selection.isEmpty() || !model) {
+        return;
+      }
+
+      inputEvent.preventDefault();
+      replaceEditorSelection(instance, inputEvent.data);
+    };
+
+    editorDomNode?.addEventListener("beforeinput", replaceSelectedTextOnBeforeInput, true);
+    const replaceSelectedTextOnKeyDown = instance.onKeyDown((event) => {
+      const key = event.browserEvent.key;
+      const isPlainTextInput =
+        key.length === 1 &&
+        !event.browserEvent.altKey &&
+        !event.browserEvent.ctrlKey &&
+        !event.browserEvent.metaKey;
+      if (!isPlainTextInput) {
+        return;
+      }
+
+      const selection = instance.getSelection();
+      if (!selection || selection.isEmpty()) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      replaceEditorSelection(instance, key);
+    });
+
+    editorInputCleanupRef.current = () => {
+      editorDomNode?.removeEventListener("beforeinput", replaceSelectedTextOnBeforeInput, true);
+      replaceSelectedTextOnKeyDown.dispose();
+    };
+
     setCursorStatus(instance.getPosition() ?? { column: 1, lineNumber: 1 });
     instance.onDidChangeCursorPosition((event) => {
+      if (!instance.getSelection()?.isEmpty()) {
+        return;
+      }
+
       setCursorStatus(event.position);
     });
     instance.focus();
   };
+
+  useEffect(() => {
+    return () => {
+      editorInputCleanupRef.current?.();
+      if (editorSyncTimerRef.current) {
+        window.clearTimeout(editorSyncTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     void loadSettings()
@@ -547,6 +754,14 @@ function App() {
   }, [setSettings]);
 
   useEffect(() => {
+    void preloadMonaco();
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
     let unlisten: (() => void) | undefined;
 
     void listen("native-menu-settings", () => setSettingsOpen(true)).then((handler) => {
@@ -557,6 +772,10 @@ function App() {
   }, [setSettingsOpen]);
 
   useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
     let unlisten: (() => void) | undefined;
 
     void listen<string>("native-menu-command", (event) => {
@@ -626,7 +845,7 @@ function App() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      void handleSaveActiveTab();
+      void autosaveTab(activeTab);
     }, 450);
 
     return () => window.clearTimeout(timeoutId);
@@ -642,12 +861,14 @@ function App() {
     const handleKeyDown = (event: KeyboardEvent) => {
       const modifier = event.metaKey || event.ctrlKey;
 
-      if (event.key === "Escape") {
-        setWorkspaceMenu(null);
-        setFileAction(null);
-        setPaletteOpen(false);
-        setSettingsOpen(false);
-      }
+    if (event.key === "Escape") {
+      setWorkspaceMenu(null);
+      setFileAction(null);
+      setSavePrompt(null);
+      setDeletePrompt(null);
+      setPaletteOpen(false);
+      setSettingsOpen(false);
+    }
 
       if (!modifier) {
         return;
@@ -684,6 +905,32 @@ function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [commandContext, setPaletteOpen, setSettingsOpen, setSidebarMode, setSidebarOpen]);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+
+    void getCurrentWindow().onCloseRequested((event) => {
+      if (allowWindowCloseRef.current) {
+        return;
+      }
+
+      const dirtyTab = useAppStore.getState().tabs.find((tab) => tab.dirty);
+      if (!dirtyTab) {
+        return;
+      }
+
+      event.preventDefault();
+      setSavePrompt({ kind: "window", tabId: dirtyTab.id });
+    }).then((handler) => {
+      unlisten = handler;
+    });
+
+    return () => unlisten?.();
+  }, []);
 
   useEffect(() => {
     const closeWorkspaceMenu = () => setWorkspaceMenu(null);
@@ -804,10 +1051,12 @@ function App() {
         if (name !== currentName) {
           const nextPath = joinPath(fileAction.targetPath, name);
           await renamePath(fileAction.node.path, nextPath);
+          updateRenamedPath(
+            fileAction.node.path,
+            nextPath,
+            fileAction.node.isDir ? undefined : getMonacoLanguage(nextPath),
+          );
           await refreshWorkspace();
-          if (!fileAction.node.isDir) {
-            await handleOpenFile(nextPath, { preview: false });
-          }
         }
       }
 
@@ -818,15 +1067,24 @@ function App() {
     }
   }
 
-  async function deleteWorkspaceNode(node: FileNode) {
-    const message = node.isDir
-      ? `Delete folder "${node.name}" and everything inside it?`
-      : `Delete file "${node.name}"?`;
-    if (!confirm(message)) {
+  function requestDeleteWorkspaceNode(node: FileNode) {
+    setWorkspaceMenu(null);
+    setDeletePrompt({ node });
+  }
+
+  async function confirmDeleteWorkspaceNode() {
+    if (!deletePrompt) {
       return;
     }
 
-    await deletePath(node.path);
+    try {
+      await deletePath(deletePrompt.node.path);
+      setDeletePrompt(null);
+      await refreshWorkspace();
+      setOpenError(null);
+    } catch (error) {
+      setOpenError(String(error));
+    }
   }
 
   return (
@@ -876,6 +1134,7 @@ function App() {
                       className={`open-file-item ${tab.id === activeTabId ? "active" : ""} ${tab.preview && !tab.dirty ? "preview" : ""}`}
                       onClick={() => setActiveTab(tab.id)}
                     >
+                      <FileIcon name={tab.name} />
                       <span>{tab.name}</span>
                       {tab.dirty ? <em>•</em> : null}
                     </button>
@@ -944,7 +1203,7 @@ function App() {
                 onAuxClick={(event) => {
                   if (event.button === 1) {
                     event.preventDefault();
-                    closeTab(tab.id);
+                    requestCloseTab(tab.id);
                   }
                 }}
                 onMouseDown={(event) => {
@@ -959,7 +1218,7 @@ function App() {
                   className="tab-close"
                   onClick={(event) => {
                     event.stopPropagation();
-                    closeTab(tab.id);
+                    requestCloseTab(tab.id);
                   }}
                 >
                   ×
@@ -983,12 +1242,15 @@ function App() {
                   beforeMount={configureMonaco}
                   height="100%"
                   language={activeTab.language}
-                  onChange={(value) => updateActiveTabContent(value ?? "")}
+                  onChange={(value) => scheduleEditorContentSync(activeTab.id, value ?? "")}
                   onMount={handleEditorMount}
                   options={{
                     automaticLayout: true,
                     fontFamily: settings.fontFamily,
                     fontSize: settings.fontSize,
+                    fontLigatures: true,
+                    letterSpacing: 0.1,
+                    lineHeight: Math.round(settings.fontSize * 1.58),
                     minimap: { enabled: true, renderCharacters: false, showSlider: "mouseover" },
                     scrollBeyondLastLine: false,
                     scrollbar: {
@@ -1001,8 +1263,10 @@ function App() {
                     wordWrap: settings.wordWrap,
                   }}
                   path={activeTab.path || activeTab.id}
+                  saveViewState
                   theme={settings.theme === "paper" ? "pptext-paper" : "pptext-ember"}
-                  value={activeTab.content}
+                  defaultLanguage={activeTab.language}
+                  defaultValue={activeTab.content}
                 />
                 <div className="inline-results">
                   {inFileResults.slice(0, 8).map((result) => (
@@ -1024,12 +1288,8 @@ function App() {
             ) : (
               <div className="welcome-state">
                 <div className="welcome-card">
-                  <p className="eyebrow">Focused editing starts here</p>
-                  <h1>Open a workspace and keep your hands on the keyboard.</h1>
-                  <p>
-                    PPText Editor includes Monaco-powered editing, local workspaces, command palette,
-                    persistent settings, recent sessions, and fast text search out of the box.
-                  </p>
+                  <p className="eyebrow">PPText Editor</p>
+                  <h1>Open a file or folder</h1>
                   <div className="welcome-actions">
                     <button onClick={() => void commandContext.openFolderPicker()}>Open Folder</button>
                     <button onClick={() => void commandContext.openFilePicker()}>Open File</button>
@@ -1038,7 +1298,8 @@ function App() {
                     <div className="recent-list">
                       {settings.recentFiles.map((path) => (
                         <button key={path} className="recent-item" onClick={() => void handleOpenFile(path)}>
-                          {path}
+                          <strong>{path.split("/").pop() ?? path}</strong>
+                          <span>{trimPath(parentPath(path), workspace.rootPath)}</span>
                         </button>
                       ))}
                     </div>
@@ -1118,7 +1379,7 @@ function App() {
               <button onClick={() => void runWorkspaceAction(() => copyText(workspaceMenu.node.path))}>Copy Path</button>
               <hr />
               <button onClick={() => startCreateFolder(workspaceMenu.node.path)}>New Folder...</button>
-              <button onClick={() => void runWorkspaceAction(() => deleteWorkspaceNode(workspaceMenu.node))}>Delete Folder</button>
+              <button onClick={() => requestDeleteWorkspaceNode(workspaceMenu.node)}>Delete Folder</button>
               <button
                 onClick={() => {
                   setWorkspaceMenu(null);
@@ -1133,7 +1394,7 @@ function App() {
           ) : (
             <>
               <button onClick={() => startRenameWorkspaceNode(workspaceMenu.node)}>Rename...</button>
-              <button onClick={() => void runWorkspaceAction(() => deleteWorkspaceNode(workspaceMenu.node))}>Delete File</button>
+              <button onClick={() => requestDeleteWorkspaceNode(workspaceMenu.node)}>Delete File</button>
               <button onClick={() => void runWorkspaceAction(() => revealItemInDir(workspaceMenu.node.path))}>Reveal in Finder</button>
               <button onClick={() => void runWorkspaceAction(() => copyText(workspaceMenu.node.path))}>Copy Path</button>
             </>
@@ -1162,6 +1423,23 @@ function App() {
             </div>
           </form>
         </div>
+      ) : null}
+
+      {savePrompt ? (
+        <SaveChangesDialog
+          fileName={useAppStore.getState().tabs.find((tab) => tab.id === savePrompt.tabId)?.name ?? "Untitled"}
+          onCancel={() => setSavePrompt(null)}
+          onDiscard={handleSavePromptDiscard}
+          onSave={() => void handleSavePromptSave()}
+        />
+      ) : null}
+
+      {deletePrompt ? (
+        <DeleteConfirmDialog
+          node={deletePrompt.node}
+          onCancel={() => setDeletePrompt(null)}
+          onDelete={() => void confirmDeleteWorkspaceNode()}
+        />
       ) : null}
 
       {isSettingsOpen ? (
@@ -1330,6 +1608,15 @@ type FileActionState = {
   value: string;
 };
 
+type SavePromptState = {
+  kind: "tab" | "window";
+  tabId: string;
+};
+
+type DeletePromptState = {
+  node: FileNode;
+};
+
 function flattenFileTree(root: FileNode | null) {
   if (!root) {
     return [];
@@ -1462,7 +1749,8 @@ function TreeNode({ expandedNodes, node, onContextMenu, onOpenFile, onToggleNode
   if (!node.isDir) {
     return (
       <button className="tree-node file-node" onClick={() => void onOpenFile(node.path)} onContextMenu={(event) => onContextMenu(event, node)}>
-        {node.name}
+        <FileIcon name={node.name} />
+        <span>{node.name}</span>
       </button>
     );
   }
@@ -1471,6 +1759,7 @@ function TreeNode({ expandedNodes, node, onContextMenu, onOpenFile, onToggleNode
     <div className="tree-group">
       <button className="tree-node folder-node" onClick={() => onToggleNode(node.path)} onContextMenu={(event) => onContextMenu(event, node)}>
         <span>{isExpanded ? "▾" : "▸"}</span>
+        <FolderIcon />
         <span>{node.name}</span>
       </button>
       {isExpanded ? (
@@ -1489,6 +1778,121 @@ function TreeNode({ expandedNodes, node, onContextMenu, onOpenFile, onToggleNode
       ) : null}
     </div>
   );
+}
+
+function FolderIcon() {
+  return <span className="node-icon folder-icon" aria-hidden="true" />;
+}
+
+function FileIcon({ name }: { name: string }) {
+  const extension = fileExtension(name);
+  return (
+    <span className={`node-icon file-icon file-icon-${extension}`} aria-hidden="true">
+      {extension === "file" ? "" : extension.slice(0, 3)}
+    </span>
+  );
+}
+
+function fileExtension(name: string) {
+  const basename = name.toLowerCase();
+  if (basename === "dockerfile" || basename === "makefile") {
+    return basename;
+  }
+
+  const dotIndex = basename.lastIndexOf(".");
+  if (dotIndex <= 0 || dotIndex === basename.length - 1) {
+    return "file";
+  }
+
+  return basename.slice(dotIndex + 1).replace(/[^a-z0-9]/g, "") || "file";
+}
+
+type SaveChangesDialogProps = {
+  fileName: string;
+  onCancel: () => void;
+  onDiscard: () => void;
+  onSave: () => void;
+};
+
+function SaveChangesDialog({ fileName, onCancel, onDiscard, onSave }: SaveChangesDialogProps) {
+  return (
+    <div className="modal-overlay" role="presentation" onClick={onCancel}>
+      <section
+        aria-labelledby="save-changes-title"
+        aria-modal="true"
+        className="confirm-dialog save-dialog"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="save-changes-title">Do you want to save the changes you made to {fileName}?</h2>
+        <p>Your changes will be lost if you don't save them.</p>
+        <div className="confirm-actions">
+          <button className="confirm-primary" onClick={onSave}>
+            Save
+          </button>
+          <button onClick={onDiscard}>Don't Save</button>
+          <button onClick={onCancel}>Cancel</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+type DeleteConfirmDialogProps = {
+  node: FileNode;
+  onCancel: () => void;
+  onDelete: () => void;
+};
+
+function DeleteConfirmDialog({ node, onCancel, onDelete }: DeleteConfirmDialogProps) {
+  return (
+    <div className="modal-overlay" role="presentation" onClick={onCancel}>
+      <section
+        aria-labelledby="delete-title"
+        aria-modal="true"
+        className="confirm-dialog delete-dialog"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="delete-title">Delete {node.isDir ? "folder" : "file"} "{node.name}"?</h2>
+        <p>
+          {node.isDir
+            ? "This folder and everything inside it will be permanently deleted."
+            : "This file will be permanently deleted."}
+        </p>
+        <div className="confirm-actions">
+          <button className="confirm-danger" onClick={onDelete}>
+            Delete
+          </button>
+          <button onClick={onCancel}>Cancel</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export function replaceEditorSelection(
+  editor: import("monaco-editor").editor.IStandaloneCodeEditor,
+  text: string,
+) {
+  const selection = editor.getSelection();
+  const model = editor.getModel();
+  if (!selection || selection.isEmpty() || !model) {
+    return;
+  }
+
+  const nextPosition = model.getPositionAt(model.getOffsetAt(selection.getStartPosition()) + text.length);
+
+  editor.pushUndoStop();
+  editor.executeEdits("selection-replace", [
+    {
+      forceMoveMarkers: true,
+      range: selection,
+      text,
+    },
+  ]);
+  editor.setPosition(nextPosition);
+  editor.pushUndoStop();
 }
 
 export default App;

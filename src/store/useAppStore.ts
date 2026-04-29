@@ -28,6 +28,8 @@ type AppStore = {
   setWorkspaceSearch: (query: string, results: SearchResult[]) => void;
   toggleNode: (path: string) => void;
   updateActiveTabContent: (content: string) => void;
+  updateTabContent: (tabId: string, content: string) => void;
+  updateRenamedPath: (previousPath: string, nextPath: string, nextLanguage?: string) => void;
   updateWorkspaceState: (rootPath: string | null, expandedNodes?: string[]) => void;
 };
 
@@ -76,11 +78,6 @@ export const useAppStore = create<AppStore>((set) => ({
   workspaceResults: [],
   closeTab: (tabId) =>
     set((state) => {
-      const target = state.tabs.find((tab) => tab.id === tabId);
-      if (target?.dirty && !window.confirm(`Close ${target.name} without saving?`)) {
-        return state;
-      }
-
       const tabs = state.tabs.filter((tab) => tab.id !== tabId);
       const nextActiveTabId =
         state.workspace.activeTabId === tabId ? (tabs.length > 0 ? tabs[tabs.length - 1].id : null) : state.workspace.activeTabId;
@@ -169,6 +166,58 @@ export const useAppStore = create<AppStore>((set) => ({
           : tab,
       ),
     })),
+  updateTabContent: (tabId, content) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) =>
+        tab.id === tabId ? { ...tab, content, dirty: content !== tab.originalContent } : tab,
+      ),
+    })),
+  updateRenamedPath: (previousPath, nextPath, nextLanguage) =>
+    set((state) => {
+      const nextName = nextPath.split("/").pop() ?? nextPath;
+      const nextTabs = state.tabs.map((tab) => {
+        if (tab.path === previousPath || tab.id === previousPath) {
+          return {
+            ...tab,
+            id: nextPath,
+            language: nextLanguage ?? tab.language,
+            name: nextName,
+            path: nextPath,
+          };
+        }
+
+        if (!tab.path.startsWith(`${previousPath}/`)) {
+          return tab;
+        }
+
+        const remappedPath = `${nextPath}${tab.path.slice(previousPath.length)}`;
+        return {
+          ...tab,
+          id: tab.id === tab.path ? remappedPath : tab.id,
+          name: remappedPath.split("/").pop() ?? remappedPath,
+          path: remappedPath,
+        };
+      });
+      const activeTabId =
+        state.workspace.activeTabId === previousPath ||
+        state.workspace.activeTabId?.startsWith(`${previousPath}/`)
+          ? `${nextPath}${state.workspace.activeTabId.slice(previousPath.length)}`
+          : state.workspace.activeTabId;
+
+      return {
+        tabs: nextTabs,
+        workspace: {
+          ...state.workspace,
+          activeTabId,
+          expandedNodes: state.workspace.expandedNodes.map((entry) =>
+            entry === previousPath || entry.startsWith(`${previousPath}/`)
+              ? `${nextPath}${entry.slice(previousPath.length)}`
+              : entry,
+          ),
+          openTabs: nextTabs.map((tab) => tab.id),
+        },
+      };
+    }),
   updateWorkspaceState: (rootPath, expandedNodes) =>
     set((state) => ({
       workspace: {
